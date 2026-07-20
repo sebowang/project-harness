@@ -4,6 +4,8 @@
 
 TODO(HARNESS)：用两到三句话说明项目服务对象、核心能力和明确非目标。
 
+本文件是 Codex、Claude Code 和 Trae 共用的项目规则事实源。`CLAUDE.md` 只导入本文件，不在其他工具入口复制规则正文。
+
 ## 修改前必读
 
 1. 本文件。
@@ -38,8 +40,21 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 
 - `docs/project-map.md`：当前架构事实、模块边界、依赖和验收入口。
 - `docs/verification.md`：变更类型与验证证据的映射。
+- `docs/workflows/`：工具中立的可复用工作流程；Standard 模式下由各工具入口按需读取。
 
 TODO(HARNESS)：Standard 模式下补充 PRD、ADR、Reference 与 Harness 的项目具体规则。
+
+## 公共工作流
+
+Standard 模式提供：
+
+- `docs/workflows/project-start.md`
+- `docs/workflows/change-plan.md`
+- `docs/workflows/adversarial-review.md`
+- `docs/workflows/harness-authoring.md`
+- `docs/workflows/project-handoff.md`
+
+当工具不能自动发现 Skill 时，直接读取并执行对应工作流。
 
 ## 完成标准
 

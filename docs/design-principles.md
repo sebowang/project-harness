@@ -13,7 +13,8 @@ Project Harness 的目标是让 Agent 能可靠地理解项目、控制变更范
 | 长期决策与不变量 | `docs/decisions/` | 保留背景、取舍、后果和替代关系 |
 | 产品需求 | `docs/prd/` | 与架构事实和技术决策分离 |
 | 外部接口与依赖事实 | `docs/reference/` | 记录观察结果，不暗示已批准决策 |
-| 重复工作流程 | `.agents/skills/` | 按任务触发，避免主规则文件膨胀 |
+| 重复工作流程 | `docs/workflows/` | 工具中立的流程事实源，可由不同 Agent 入口复用 |
+| 工具自动发现入口 | `.agents/skills/`、`.claude/skills/` | 只负责路由，不复制完整流程 |
 | 可重复验收 | `tests/harness/` | 用退出码和可观察结果提供证据 |
 | 跨会话临时状态 | 单一 handoff 文件 | 仅在确有恢复需求时创建，避免多份状态冲突 |
 

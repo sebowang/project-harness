@@ -26,8 +26,13 @@ foreach ($relativePath in $config.requiredPaths) {
     }
 }
 
-$skillRoot = Join-Path $repositoryRoot '.agents/skills'
-if (Test-Path -LiteralPath $skillRoot -PathType Container) {
+$skillRoots = @('.agents/skills', '.claude/skills')
+foreach ($relativeSkillRoot in $skillRoots) {
+    $skillRoot = Join-Path $repositoryRoot $relativeSkillRoot
+    if (-not (Test-Path -LiteralPath $skillRoot -PathType Container)) {
+        continue
+    }
+
     foreach ($skillFile in Get-ChildItem -LiteralPath $skillRoot -Filter 'SKILL.md' -Recurse -File) {
         $content = Get-Content -LiteralPath $skillFile.FullName -Raw
         $relativePath = $skillFile.FullName.Substring($repositoryRoot.Length).TrimStart('\', '/')

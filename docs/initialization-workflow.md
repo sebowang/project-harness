@@ -34,6 +34,8 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 - 创建不存在的目录和文件。
 - 替换模板中的项目名称。
 - 保留已有文件并报告 `SKIP`。
+- 为 Claude Code 创建导入 `AGENTS.md` 的 `CLAUDE.md`。
+- Standard 模式为 Codex 与 Claude Code 创建指向公共工作流的 Skill 入口。
 - 生成 `harness.config.json`。
 - 不修改业务源码、依赖、数据库、部署脚本或 Git Hook。
 
@@ -48,6 +50,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 3. 在 `harness.config.json` 配置实际可执行的项目验证命令。
 4. 删除所有 `TODO(HARNESS)` 标记。
 5. 运行 Harness 检查和项目验证。
+6. 分别在实际使用的 Agent 中确认规则入口已加载。
 
 ## 阶段五：验证
 

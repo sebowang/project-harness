@@ -1,0 +1,57 @@
+# Agent 兼容策略
+
+## 目标边界
+
+本项目保证的是“仓库结构能够被目标工具发现并路由到同一套规则与流程”，不保证语言模型对所有文字指令百分之百服从。必须执行的安全、权限和发布要求仍应使用 Hook、Sandbox、审批、CI 和环境权限机械约束。
+
+## 单一事实源
+
+```text
+                         +-> Codex: .agents/skills/*/SKILL.md --+
+AGENTS.md <- CLAUDE.md   +-> Claude: .claude/skills/*/SKILL.md -+-> docs/workflows/*.md
+    ^                    +-> Trae: AGENTS.md -------------------+
+    |
+项目规则、文档路由和验证要求
+```
+
+- `AGENTS.md`：所有工具共用的仓库规则。
+- `CLAUDE.md`：只包含 `@AGENTS.md`，让 Claude Code 导入公共规则。
+- `docs/workflows/`：工具中立的完整工作流程。
+- `.agents/skills/`：Codex 自动发现入口，只引用公共工作流。
+- `.claude/skills/`：Claude Code 自动发现入口，只引用公共工作流。
+- Trae：从 `AGENTS.md` 的“公共工作流”章节读取并按需打开对应文档。
+
+## 为什么默认使用导入文件
+
+Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AGENTS.md` 导入公共规则。符号链接同样可用，但 Windows 创建符号链接可能依赖管理员权限或开发者模式，因此初始化器默认生成可提交、可审查的导入文件。
+
+需要符号链接的团队可以在初始化后自行将 `CLAUDE.md` 替换为指向 `AGENTS.md` 的链接，但不要同时维护两份正文。
+
+## 兼容性验收
+
+初始化 Smoke Test 验证：
+
+1. `AGENTS.md` 和 `CLAUDE.md` 同时生成。
+2. `CLAUDE.md` 包含 `@AGENTS.md`。
+3. 五个公共工作流存在。
+4. Codex 与 Claude Code 的 Skill 入口都存在并指向同名公共工作流。
+5. Harness 检查验证这些路径仍在 `requiredPaths` 中。
+
+工具升级后仍建议分别执行一次可观察测试：启动新会话，要求工具复述项目完成标准和验证入口，并确认它能定位 `docs/workflows/project-start.md`。这比仅检查文件存在更接近真实运行环境。
+
+## 当前验证矩阵
+
+| 工具 | 入口 | 最近验证 | 结果 |
+|---|---|---|---|
+| Codex | `AGENTS.md`、`.agents/skills/` | 2026-07-20，按当前官方发现路径和生成 Smoke Test | 结构通过 |
+| Claude Code `2.1.205` | `CLAUDE.md` 导入 `AGENTS.md` | 2026-07-20，无工具非交互实测 | 正确识别 `AGENTS.md` 和仓库验证命令 |
+| Trae CN | `AGENTS.md` | 2026-07-20，桌面客户端人工实测 | 能读取项目规则 |
+
+该矩阵是已验证快照，不是对未来版本的永久承诺。升级工具后应重新执行兼容性验收并更新日期与结果。
+
+## 参考
+
+- [Codex: Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
+- [Codex: Agent Skills](https://learn.chatgpt.com/docs/agent-configuration/skills)
+- [Claude Code: How Claude remembers your project](https://code.claude.com/docs/en/memory)
+- [Claude Code: Extend Claude with skills](https://code.claude.com/docs/en/skills)

@@ -114,6 +114,7 @@ if ($Profile -eq 'Standard') {
 
 $requiredPaths = @(
     'AGENTS.md',
+    'CLAUDE.md',
     'harness.config.json',
     'docs/project-map.md',
     'docs/verification.md',
@@ -126,6 +127,12 @@ if ($Profile -eq 'Standard') {
         'docs/prd/README.md',
         'docs/decisions/README.md',
         'docs/reference/README.md',
+        'docs/agent-compatibility.md',
+        'docs/workflows/project-start.md',
+        'docs/workflows/change-plan.md',
+        'docs/workflows/adversarial-review.md',
+        'docs/workflows/harness-authoring.md',
+        'docs/workflows/project-handoff.md',
         'scripts/check-doc-drift.ps1',
         'tests/harness/README.md',
         '.agents/skills/project-start/SKILL.md',
@@ -133,6 +140,11 @@ if ($Profile -eq 'Standard') {
         '.agents/skills/adversarial-review/SKILL.md',
         '.agents/skills/harness-authoring/SKILL.md',
         '.agents/skills/project-handoff/SKILL.md'
+        '.claude/skills/project-start/SKILL.md',
+        '.claude/skills/change-plan/SKILL.md',
+        '.claude/skills/adversarial-review/SKILL.md',
+        '.claude/skills/harness-authoring/SKILL.md',
+        '.claude/skills/project-handoff/SKILL.md'
     )
 }
 

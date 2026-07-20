@@ -4,9 +4,11 @@
 
 本仓库维护一套通用、非破坏性的 AI 辅助研发初始化方案。修改必须保持领域、语言和框架中立，不得嵌入任何私有项目代码、名称、路径或业务约定。
 
+`AGENTS.md` 是跨工具协作规则的唯一事实来源。`CLAUDE.md` 只负责导入它；`.agents/skills/`、`.claude/skills/` 只负责把各工具路由到 `docs/workflows/` 中的公共流程。
+
 ## 修改前
 
-1. 阅读 `README.md`、`docs/design-principles.md` 和 `docs/initialization-workflow.md`。
+1. 阅读 `README.md`、`docs/design-principles.md`、`docs/agent-compatibility.md` 和 `docs/initialization-workflow.md`。
 2. 修改模板时，同时检查初始化器、Smoke Test 和生成结果。
 3. 区分模板完整性检查与目标项目的真实构建/测试，不能用前者代替后者。
 
@@ -17,6 +19,7 @@
 - 不把命令字符串交给 `Invoke-Expression`；验证命令使用 `executable + arguments` 结构。
 - 不把安全检查脚本描述成无法绕过的安全边界。
 - 新增模板文件时，更新初始化器生成的 `requiredPaths` 和 Smoke Test。
+- 不在 `AGENTS.md`、`CLAUDE.md` 和两个 Skill 目录中复制三份同义规则。
 - 保持 Windows PowerShell 5.1 兼容；使用 PowerShell 7 专属语法前必须有明确理由。
 
 ## 验证

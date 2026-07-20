@@ -2,6 +2,8 @@
 
 面向 AI 辅助研发的通用项目初始化工具。它把仓库规则、架构事实、长期决策、可复用流程和验证入口放进版本控制，让后续 Agent 会话可以基于项目文件工作，而不是依赖聊天记录。
 
+当前模板同时为 Codex、Claude Code 和 Trae 提供项目入口，并使用 `AGENTS.md` 作为唯一规则事实源。
+
 本项目不绑定业务领域、编程语言或应用框架。初始化器使用 PowerShell，适合 Windows 仓库，也可在安装 PowerShell 7 的 macOS/Linux 环境运行。
 
 ## 设计目标
@@ -54,19 +56,20 @@ Standard 模式会补充以下结构：
 
 ```text
 AGENTS.md
+CLAUDE.md
 harness.config.json
 docs/
   project-map.md
   verification.md
+  agent-compatibility.md
+  workflows/*.md
   prd/README.md
   decisions/README.md
   reference/README.md
 .agents/skills/
-  project-start/SKILL.md
-  change-plan/SKILL.md
-  adversarial-review/SKILL.md
-  harness-authoring/SKILL.md
-  project-handoff/SKILL.md
+  */SKILL.md
+.claude/skills/
+  */SKILL.md
 scripts/
   check-harness.ps1
   check-doc-drift.ps1
@@ -75,6 +78,16 @@ tests/harness/README.md
 ```
 
 默认不创建 `current-task.md`、`session-state.json`、`session-log.md`、`progress-map.md` 等重复状态文件。跨会话长任务确有需要时，由 `project-handoff` Skill 建立单一交接文件即可。
+
+## Agent 兼容方式
+
+| 工具 | 自动入口 | 公共工作流入口 |
+|---|---|---|
+| Codex | `AGENTS.md`、`.agents/skills/` | `docs/workflows/` |
+| Claude Code | `CLAUDE.md` 导入 `AGENTS.md`、`.claude/skills/` | `docs/workflows/` |
+| Trae | `AGENTS.md` | `docs/workflows/` |
+
+各工具专属 Skill 只是薄入口，不复制完整规则。详细设计见 [Agent 兼容策略](docs/agent-compatibility.md)。
 
 ## 配置真实验证
 
@@ -102,6 +115,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 
 - [设计原则](docs/design-principles.md)
 - [初始化工作流](docs/initialization-workflow.md)
+- [Agent 兼容策略](docs/agent-compatibility.md)
 
 ## 与原始方案的关系
 

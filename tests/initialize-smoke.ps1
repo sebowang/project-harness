@@ -14,11 +14,15 @@ try {
 
     $expectedPaths = @(
         'AGENTS.md',
+        'CLAUDE.md',
         'harness.config.json',
         'docs\project-map.md',
         'docs\verification.md',
         'docs\decisions\README.md',
+        'docs\agent-compatibility.md',
+        'docs\workflows\project-start.md',
         '.agents\skills\project-start\SKILL.md',
+        '.claude\skills\project-start\SKILL.md',
         'scripts\verify.ps1',
         'tests\harness\README.md'
     )
@@ -31,6 +35,30 @@ try {
 
     if ([IO.File]::ReadAllText($existingAgents) -ne "# Existing rules`r`n") {
         throw 'Existing AGENTS.md was overwritten without -Force.'
+    }
+
+    $claudeEntry = [IO.File]::ReadAllText((Join-Path $testRoot 'CLAUDE.md')).Trim()
+    if ($claudeEntry -ne '@AGENTS.md') {
+        throw 'CLAUDE.md does not import AGENTS.md.'
+    }
+
+    $workflowNames = @('project-start', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff')
+    foreach ($workflowName in $workflowNames) {
+        $workflowPath = Join-Path $testRoot "docs\workflows\$workflowName.md"
+        $codexSkillPath = Join-Path $testRoot ".agents\skills\$workflowName\SKILL.md"
+        $claudeSkillPath = Join-Path $testRoot ".claude\skills\$workflowName\SKILL.md"
+        foreach ($path in @($workflowPath, $codexSkillPath, $claudeSkillPath)) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+                throw "Missing cross-agent workflow path: $path"
+            }
+        }
+
+        foreach ($skillPath in @($codexSkillPath, $claudeSkillPath)) {
+            $skillContent = Get-Content -LiteralPath $skillPath -Raw
+            if ($skillContent -notmatch [regex]::Escape("docs/workflows/$workflowName.md")) {
+                throw "Skill does not reference canonical workflow: $skillPath"
+            }
+        }
     }
 
     $projectMap = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\project-map.md'))
@@ -62,6 +90,9 @@ try {
     & $initializer -TargetPath $lightRoot -Profile Light -ProjectName 'Light Project'
     if (Test-Path -LiteralPath (Join-Path $lightRoot 'docs\decisions\README.md')) {
         throw 'Light profile unexpectedly installed Standard files.'
+    }
+    if ((Get-Content -LiteralPath (Join-Path $lightRoot 'CLAUDE.md') -Raw).Trim() -ne '@AGENTS.md') {
+        throw 'Light profile did not create the Claude Code entrypoint.'
     }
     & (Join-Path $lightRoot 'scripts\verify.ps1') -Scope Harness
     if (-not $?) {
