@@ -129,6 +129,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 - [初始化工作流](docs/initialization-workflow.md)
 - [Agent 兼容策略](docs/agent-compatibility.md)
 - [Harness 配置](docs/harness-configuration.md)
+- [持续实施计划](docs/implementation-roadmap.md)
 
 ## 与原始方案的关系
 
