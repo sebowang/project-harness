@@ -2,6 +2,12 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.0.2] - 2026-08-03
+
+### Fixed
+
+- Linux/macOS PowerShell 初始化现在会正确枚举并安装 `.trae/rules/` 等隐藏模板路径。
+
 ## [1.0.1] - 2026-08-03
 
 ### Fixed
