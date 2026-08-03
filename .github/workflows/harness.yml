@@ -9,6 +9,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check template neutrality
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File tests/check-template-neutrality.ps1
       - name: Run PowerShell 5.1 smoke test
         shell: powershell
         run: powershell -ExecutionPolicy Bypass -File tests/initialize-smoke.ps1
@@ -21,6 +24,9 @@ jobs:
         uses: PowerShell/PowerShell@v1
         with:
           powershell-version: '7.4.x'
+      - name: Check template neutrality
+        shell: pwsh
+        run: ./tests/check-template-neutrality.ps1
       - name: Run PowerShell smoke test
         shell: pwsh
         run: ./tests/initialize-smoke.ps1

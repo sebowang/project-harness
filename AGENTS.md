@@ -2,7 +2,7 @@
 
 ## 项目目标
 
-本仓库维护一套通用、非破坏性的 AI 辅助研发初始化方案。修改必须保持领域、语言和框架中立，不得嵌入任何私有项目代码、名称、路径或业务约定。
+本仓库维护一套通用、非破坏性的 AI 辅助研发初始化方案。发布到本仓库的模板、脚本与示例必须保持领域、语言和框架中立，不得嵌入私有项目代码、名称、路径或业务约定。该限制不适用于安装后的目标仓库：目标项目可以并且应当保留自身的私有代码、名称、路径和业务约定。
 
 `AGENTS.md` 是跨工具协作规则的唯一事实来源。`CLAUDE.md` 只负责导入它；`.agents/skills/`、`.claude/skills/` 只负责把各工具路由到 `docs/workflows/` 中的公共流程。
 
@@ -28,9 +28,10 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tests/initialize-smoke.ps1
+powershell -ExecutionPolicy Bypass -File tests/check-template-neutrality.ps1
 ```
 
-并检查仓库不包含示例业务项目的名称、代码或绝对路径。
+第二个命令检查发布表面不包含已知私有项目名称或绝对用户路径。
 
 ## 文档
 
