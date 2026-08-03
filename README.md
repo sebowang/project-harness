@@ -20,11 +20,11 @@
 
 ### 复制给 Agent
 
-在目标项目的根目录打开 Codex、Claude Code 或支持终端的 Agent，复制以下指令。它不依赖作者电脑上的绝对路径：Agent 会从 GitHub 下载固定版本到自己的临时目录，再把 Harness 安装到当前 Git 仓库。
+在目标项目的根目录打开 Codex、Claude Code 或支持终端的 Agent，复制以下指令。它不依赖作者电脑上的绝对路径：Agent 会从 GitHub 获取最新稳定 Release 到自己的临时目录，再把 Harness 安装到当前 Git 仓库。
 
-> 在当前 Git 仓库安装 [Project Harness v1.0.1](https://github.com/sebowang/project-harness/tree/v1.0.1)。先检查当前仓库根目录和 `git status --short`，保留所有已有修改。将该 tag 克隆到系统临时目录，从克隆目录运行 `scripts/initialize-project.ps1 -TargetPath <当前仓库> -Profile Standard`，不得使用 `-Force`，不得修改业务源码、依赖、部署或 Git Hook。安装后执行 `project-onboarding` 的只读 Proposal 阶段：检查已有 `AGENTS.md`、`CLAUDE.md`、CI、构建、测试和项目文档，列出已验证事实、未知项、建议的验证命令与风险能力。不要修改项目所有文件、启用能力或运行外部副作用命令，等待我确认 proposal。
+> 在当前 Git 仓库安装 GitHub 仓库 `sebowang/project-harness` 的最新稳定 Release。先检查当前仓库根目录和 `git status --short`，保留所有已有修改；先从 GitHub Releases 解析最新稳定版本并把实际版本号报告给我，再将该版本克隆到系统临时目录，从克隆目录运行 `scripts/initialize-project.ps1 -TargetPath <当前仓库> -Profile Standard`，不得使用 `-Force`，不得修改业务源码、依赖、部署或 Git Hook。安装后执行 `project-onboarding` 的只读 Proposal 阶段：检查已有 `AGENTS.md`、`CLAUDE.md`、CI、构建、测试和项目文档，列出已验证事实、未知项、建议的验证命令与风险能力。不要修改项目所有文件、启用能力或运行外部副作用命令，等待我确认 proposal。
 
-这条指令会安装缺失的 Harness 文件，但会保留已有的项目规则与配置；后续项目化配置仍必须由用户确认。
+这条指令会安装缺失的 Harness 文件，但会保留已有的项目规则与配置；后续项目化配置仍必须由用户确认。最新版本解析失败或 Release 不是稳定版本时，应停止并报告，不得退回使用 `main`。
 
 ### 命令行安装
 
