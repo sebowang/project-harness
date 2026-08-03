@@ -2,6 +2,12 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.0.3] - 2026-08-03
+
+### Fixed
+
+- Smoke Test 会根据当前平台使用可发现的 `powershell` 或 `pwsh` 执行项目验证。
+
 ## [1.0.2] - 2026-08-03
 
 ### Fixed
