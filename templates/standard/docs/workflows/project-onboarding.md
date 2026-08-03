@@ -21,7 +21,7 @@ Proposal 阶段不得编辑文件、安装依赖、运行会改变仓库或外�
 仅在用户明确确认当前 proposal 后：
 
 1. 重新检查 `git status --short`，保留 proposal 后出现的用户修改。
-2. 只修改已确认的文件；不把推断写成事实，不清除仍未解决的 `TODO(HARNESS)`。
+2. 只修改已确认的文件；不把推断写成事实，不清除仍未解决的项目占位符。
 3. 将确认后的项目事实、验证方式和规则保存在仓库文件中。
 4. 如果确认启用能力，在 `harness.config.json` 的 `capabilities` 中记录标识，并创建该能力要求的最小项目文件。
 5. 运行 `scripts/harness-doctor.ps1` 和 `scripts/verify.ps1 -Scope All`。
