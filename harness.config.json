@@ -1,0 +1,68 @@
+{
+    "schemaVersion":  1,
+    "harnessVersion":  "0.2.0-dev",
+    "profile":  "Standard",
+    "projectName":  "Project Harness",
+    "requiredPaths":  [
+                          "harness.config.json",
+                          "harness.lock.json",
+                          "AGENTS.md",
+                          "CLAUDE.md",
+                          "docs/harness-configuration.md",
+                          "docs/project-map.md",
+                          "docs/verification.md",
+                          "scripts/check-harness.ps1",
+                          "scripts/check-readiness.ps1",
+                          "scripts/harness-doctor.ps1",
+                          "scripts/harness-status.ps1",
+                          "scripts/verify.ps1",
+                          ".agents/skills/adversarial-review/SKILL.md",
+                          ".agents/skills/change-plan/SKILL.md",
+                          ".agents/skills/harness-authoring/SKILL.md",
+                          ".agents/skills/project-handoff/SKILL.md",
+                          ".agents/skills/project-start/SKILL.md",
+                          ".agents/skills/project-onboarding/SKILL.md",
+                          ".claude/skills/adversarial-review/SKILL.md",
+                          ".claude/skills/change-plan/SKILL.md",
+                          ".claude/skills/harness-authoring/SKILL.md",
+                          ".claude/skills/project-handoff/SKILL.md",
+                          ".claude/skills/project-start/SKILL.md",
+                          ".claude/skills/project-onboarding/SKILL.md",
+                          "docs/agent-compatibility.md",
+                          "docs/capabilities.md",
+                          "docs/decisions/README.md",
+                          "docs/prd/README.md",
+                          "docs/reference/README.md",
+                          "docs/workflows/adversarial-review.md",
+                          "docs/workflows/change-plan.md",
+                          "docs/workflows/harness-authoring.md",
+                          "docs/workflows/project-handoff.md",
+                          "docs/workflows/project-start.md",
+                          "docs/workflows/project-onboarding.md",
+                          "scripts/check-doc-drift.ps1",
+                          "tests/harness/README.md"
+                      ],
+    "projectValidation":  [
+                              {
+                                  "name":  "Initialization smoke test",
+                                  "executable":  "powershell",
+                                  "arguments":  [
+                                                     "-NoProfile",
+                                                     "-ExecutionPolicy",
+                                                     "Bypass",
+                                                     "-File",
+                                                     "tests/initialize-smoke.ps1"
+                                                 ]
+                              }
+                          ],
+    "driftChecks":  [
+
+                    ],
+    "capabilities":  [
+
+                     ],
+    "readiness":  {
+                      "requireProjectValidation":  true,
+                      "projectValidationWaiver":  null
+                  }
+}
