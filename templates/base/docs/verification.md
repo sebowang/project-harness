@@ -18,9 +18,13 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope Project
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 ```
 
+`Harness` 只验证安装结构。`All` 还会运行 readiness 检查和项目验证，是判断项目是否可以报告为 `ready` 的入口。
+
 ## 项目验证
 
 TODO(HARNESS)：把已经实际验证可运行的命令写入 `harness.config.json` 的 `projectValidation`。不要只列出工具通常使用的命令。
+
+`Standard` 默认要求至少一个项目验证命令。确实没有可运行命令时，在 `readiness.projectValidationWaiver` 中记录具体原因；此时完整检查报告 `ready with waiver`。
 
 ## 变更类型矩阵
 

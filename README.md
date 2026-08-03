@@ -36,10 +36,20 @@ pwsh -File scripts/initialize-project.ps1 -TargetPath /path/to/repository -Profi
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope Harness
 ```
 
+该命令证明 Harness 已安装且结构可读取，不代表项目已完成配置。初始化器会将新项目报告为 `installed`。
+
 然后完成两项人工工作：
 
 1. 根据真实源码填写 `docs/project-map.md`，不要保留推测性描述。
 2. 在 `harness.config.json` 的 `projectValidation` 中配置项目实际可运行的构建、测试、Lint 或 Smoke Check。
+
+完成后运行完整检查：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
+```
+
+`Standard` 默认要求至少一个项目验证命令。确实没有可运行命令时，可以在 `readiness.projectValidationWaiver` 中记录具体原因；这种状态会报告为 `ready with waiver`，不会伪装成普通验证通过。
 
 ## 初始化级别
 
@@ -59,6 +69,7 @@ AGENTS.md
 CLAUDE.md
 harness.config.json
 docs/
+  harness-configuration.md
   project-map.md
   verification.md
   agent-compatibility.md
@@ -72,6 +83,7 @@ docs/
   */SKILL.md
 scripts/
   check-harness.ps1
+  check-readiness.ps1
   check-doc-drift.ps1
   verify.ps1
 tests/harness/README.md
@@ -116,6 +128,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 - [设计原则](docs/design-principles.md)
 - [初始化工作流](docs/initialization-workflow.md)
 - [Agent 兼容策略](docs/agent-compatibility.md)
+- [Harness 配置](docs/harness-configuration.md)
 
 ## 与原始方案的关系
 

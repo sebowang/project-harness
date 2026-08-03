@@ -52,6 +52,10 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 5. 运行 Harness 检查和项目验证。
 6. 分别在实际使用的 Agent 中确认规则入口已加载。
 
+初始化器完成文件写入后，项目处于 `installed` 状态。只有 `scripts/verify.ps1 -Scope All` 通过后，项目才处于 `ready`；使用项目验证豁免时应报告为 `ready with waiver`。
+
+`Standard` 默认要求真实项目验证命令。项目确实不存在可执行验证时，在 `harness.config.json` 的 `readiness.projectValidationWaiver` 中记录具体原因，不得使用空字符串或笼统的“暂不需要”。
+
 ## 阶段五：验证
 
 ```powershell

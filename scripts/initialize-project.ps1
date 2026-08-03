@@ -60,6 +60,11 @@ function Get-RepositorySignals {
     param([Parameter(Mandatory = $true)][string]$RepositoryRoot)
 
     $signals = New-Object System.Collections.Generic.List[string]
+    if (-not (Test-Path -LiteralPath $RepositoryRoot -PathType Container)) {
+        $signals.Add('Target directory is not present during preview; inspect repository signals after installation')
+        return $signals
+    }
+
     $signalFiles = [ordered]@{
         'package.json' = 'Node.js / JavaScript / TypeScript'
         'pyproject.toml' = 'Python'
@@ -116,9 +121,11 @@ $requiredPaths = @(
     'AGENTS.md',
     'CLAUDE.md',
     'harness.config.json',
+    'docs/harness-configuration.md',
     'docs/project-map.md',
     'docs/verification.md',
     'scripts/check-harness.ps1',
+    'scripts/check-readiness.ps1',
     'scripts/verify.ps1'
 )
 
@@ -139,7 +146,7 @@ if ($Profile -eq 'Standard') {
         '.agents/skills/change-plan/SKILL.md',
         '.agents/skills/adversarial-review/SKILL.md',
         '.agents/skills/harness-authoring/SKILL.md',
-        '.agents/skills/project-handoff/SKILL.md'
+        '.agents/skills/project-handoff/SKILL.md',
         '.claude/skills/project-start/SKILL.md',
         '.claude/skills/change-plan/SKILL.md',
         '.claude/skills/adversarial-review/SKILL.md',
@@ -157,10 +164,16 @@ if ((-not (Test-Path -LiteralPath $configPath)) -or $Force) {
         requiredPaths = $requiredPaths
         projectValidation = @()
         driftChecks = @()
+        readiness = [ordered]@{
+            requireProjectValidation = ($Profile -eq 'Standard')
+            projectValidationWaiver = $null
+        }
     }
     $json = $config | ConvertTo-Json -Depth 8
-    [IO.File]::WriteAllText($configPath, $json + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
-    Write-Host 'WRITE  harness.config.json'
+    if ($PSCmdlet.ShouldProcess($configPath, 'Install harness configuration')) {
+        [IO.File]::WriteAllText($configPath, $json + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
+        Write-Host 'WRITE  harness.config.json'
+    }
 } else {
     Write-Host 'SKIP   harness.config.json'
 }
@@ -177,3 +190,9 @@ Write-Host '1. Fill docs/project-map.md with verified repository facts.'
 Write-Host '2. Add real project checks to harness.config.json.'
 Write-Host '3. Remove TODO(HARNESS) markers after review.'
 Write-Host '4. Run scripts/verify.ps1 -Scope All.'
+Write-Host ''
+if ($WhatIfPreference) {
+    Write-Host 'Status: preview only; no files were written.' -ForegroundColor Yellow
+} else {
+    Write-Host 'Status: installed; project configuration is not ready until Scope All passes.' -ForegroundColor Yellow
+}

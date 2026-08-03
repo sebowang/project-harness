@@ -27,35 +27,43 @@ if ($Scope -in @('Harness', 'All')) {
     }
 }
 
+if ($Scope -eq 'All') {
+    Invoke-CheckedScript -Path (Join-Path $PSScriptRoot 'check-readiness.ps1')
+}
+
 if ($Scope -in @('Project', 'All')) {
-    $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
-    $checks = @($config.projectValidation)
-
-    if ($checks.Count -eq 0) {
-        Write-Host 'WARN  No project validation commands are configured.' -ForegroundColor Yellow
+    if ($Scope -eq 'All' -and $hasFailure) {
+        Write-Host 'SKIP  Project validation because Harness or readiness checks failed.' -ForegroundColor Yellow
     } else {
-        Push-Location $repositoryRoot
-        try {
-            foreach ($check in $checks) {
-                $executable = [string]$check.executable
-                $arguments = @($check.arguments | ForEach-Object { [string]$_ })
-                if (-not (Get-Command $executable -ErrorAction SilentlyContinue)) {
-                    Write-Host "FAIL  $($check.name): executable not found: $executable" -ForegroundColor Red
-                    $hasFailure = $true
-                    continue
-                }
+        $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+        $checks = @($config.projectValidation)
 
-                Write-Host "RUN   $($check.name)"
-                & $executable @arguments
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "FAIL  $($check.name) exited with code $LASTEXITCODE" -ForegroundColor Red
-                    $hasFailure = $true
-                } else {
-                    Write-Host "PASS  $($check.name)" -ForegroundColor Green
+        if ($checks.Count -eq 0) {
+            Write-Host 'WARN  No project validation commands are configured.' -ForegroundColor Yellow
+        } else {
+            Push-Location $repositoryRoot
+            try {
+                foreach ($check in $checks) {
+                    $executable = [string]$check.executable
+                    $arguments = @($check.arguments | ForEach-Object { [string]$_ })
+                    if (-not (Get-Command $executable -ErrorAction SilentlyContinue)) {
+                        Write-Host "FAIL  $($check.name): executable not found: $executable" -ForegroundColor Red
+                        $hasFailure = $true
+                        continue
+                    }
+
+                    Write-Host "RUN   $($check.name)"
+                    & $executable @arguments
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Host "FAIL  $($check.name) exited with code $LASTEXITCODE" -ForegroundColor Red
+                        $hasFailure = $true
+                    } else {
+                        Write-Host "PASS  $($check.name)" -ForegroundColor Green
+                    }
                 }
+            } finally {
+                Pop-Location
             }
-        } finally {
-            Pop-Location
         }
     }
 }

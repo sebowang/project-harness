@@ -4,6 +4,26 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $initializer = Join-Path $repositoryRoot 'scripts\initialize-project.ps1'
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-' + [Guid]::NewGuid().ToString('N'))
 $lightRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-light-' + [Guid]::NewGuid().ToString('N'))
+$whatIfRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-whatif-' + [Guid]::NewGuid().ToString('N'))
+$powerShellExecutable = if (Test-Path -LiteralPath (Join-Path $PSHOME 'powershell.exe')) {
+    Join-Path $PSHOME 'powershell.exe'
+} elseif (Test-Path -LiteralPath (Join-Path $PSHOME 'pwsh.exe')) {
+    Join-Path $PSHOME 'pwsh.exe'
+} else {
+    Join-Path $PSHOME 'pwsh'
+}
+
+function Assert-ScriptFails {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [string[]]$Arguments = @()
+    )
+
+    & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $Path @Arguments
+    if ($LASTEXITCODE -eq 0) {
+        throw "Expected script to fail: $Path $($Arguments -join ' ')"
+    }
+}
 
 try {
     New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
@@ -23,6 +43,7 @@ try {
         'docs\workflows\project-start.md',
         '.agents\skills\project-start\SKILL.md',
         '.claude\skills\project-start\SKILL.md',
+        'scripts\check-readiness.ps1',
         'scripts\verify.ps1',
         'tests\harness\README.md'
     )
@@ -71,8 +92,27 @@ try {
         throw 'Generated harness verification failed.'
     }
 
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\verify.ps1') -Arguments @('-Scope', 'All')
+
     $configPath = Join-Path $testRoot 'harness.config.json'
     $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+
+    $templatePaths = @('harness.config.json')
+    foreach ($layerName in @('base', 'standard')) {
+        $layerRoot = Join-Path $repositoryRoot "templates\$layerName"
+        foreach ($file in Get-ChildItem -LiteralPath $layerRoot -Recurse -File) {
+            $relativePath = $file.FullName.Substring($layerRoot.Length).TrimStart('\', '/').Replace('\', '/')
+            $templatePaths += $relativePath
+        }
+    }
+    $pathDifferences = @(Compare-Object -ReferenceObject @($templatePaths | Sort-Object -Unique) -DifferenceObject @($config.requiredPaths | Sort-Object -Unique))
+    if ($pathDifferences.Count -gt 0) {
+        throw "Template files and requiredPaths differ: $($pathDifferences | Out-String)"
+    }
+    if (@($config.requiredPaths).Count -ne @($config.requiredPaths | Sort-Object -Unique).Count) {
+        throw 'requiredPaths contains duplicate entries.'
+    }
+
     $config.projectValidation = @(
         [pscustomobject]@{
             name = 'Smoke project command'
@@ -82,10 +122,38 @@ try {
     )
     $config | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
 
-    & (Join-Path $testRoot 'scripts\verify.ps1') -Scope Project
-    if (-not $?) {
-        throw 'Structured project validation failed.'
+    foreach ($markdownFile in Get-ChildItem -LiteralPath $testRoot -Filter '*.md' -Recurse -File) {
+        $content = Get-Content -LiteralPath $markdownFile.FullName -Raw
+        if ($content -match 'TODO\(HARNESS\)') {
+            $content.Replace('TODO(HARNESS)', 'Configured for smoke test') | Set-Content -LiteralPath $markdownFile.FullName -Encoding UTF8
+        }
     }
+
+    & (Join-Path $testRoot 'scripts\verify.ps1') -Scope All
+    if (-not $?) {
+        throw 'Ready harness verification failed.'
+    }
+
+    $validConfig = Get-Content -LiteralPath $configPath -Raw
+    $brokenConfig = $validConfig | ConvertFrom-Json
+    $brokenConfig.requiredPaths = 'AGENTS.md'
+    $brokenConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-harness.ps1')
+    [IO.File]::WriteAllText($configPath, $validConfig, (New-Object Text.UTF8Encoding($false)))
+
+    $escapeConfig = $validConfig | ConvertFrom-Json
+    $escapeConfig.requiredPaths = @($escapeConfig.requiredPaths) + '../outside.md'
+    $escapeConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-harness.ps1')
+    [IO.File]::WriteAllText($configPath, $validConfig, (New-Object Text.UTF8Encoding($false)))
+
+    $readinessScript = Join-Path $testRoot 'scripts\check-readiness.ps1'
+    $readinessBackup = Join-Path $testRoot 'scripts\check-readiness.ps1.bak'
+    Move-Item -LiteralPath $readinessScript -Destination $readinessBackup
+    New-Item -ItemType Directory -Path $readinessScript | Out-Null
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-harness.ps1')
+    Remove-Item -LiteralPath $readinessScript -Recurse -Force
+    Move-Item -LiteralPath $readinessBackup -Destination $readinessScript
 
     & $initializer -TargetPath $lightRoot -Profile Light -ProjectName 'Light Project'
     if (Test-Path -LiteralPath (Join-Path $lightRoot 'docs\decisions\README.md')) {
@@ -97,6 +165,14 @@ try {
     & (Join-Path $lightRoot 'scripts\verify.ps1') -Scope Harness
     if (-not $?) {
         throw 'Light harness verification failed.'
+    }
+
+    & $initializer -TargetPath $whatIfRoot -Profile Standard -ProjectName 'WhatIf Project' -WhatIf
+    if (-not $?) {
+        throw 'Initializer -WhatIf failed for a new target directory.'
+    }
+    if (Test-Path -LiteralPath $whatIfRoot) {
+        throw 'Initializer -WhatIf unexpectedly created the target directory.'
     }
 
     Write-Host 'Initialization smoke test passed.'
