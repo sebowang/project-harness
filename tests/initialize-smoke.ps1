@@ -30,6 +30,9 @@ try {
     New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
     $existingAgents = Join-Path $testRoot 'AGENTS.md'
     [IO.File]::WriteAllText($existingAgents, "# Existing rules`r`n", (New-Object Text.UTF8Encoding($false)))
+    $existingManaged = Join-Path $testRoot 'docs\harness-configuration.md'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $existingManaged) -Force | Out-Null
+    [IO.File]::WriteAllText($existingManaged, "# Existing managed-path content`n", (New-Object Text.UTF8Encoding($false)))
 
     & $initializer -TargetPath $testRoot -Profile Standard -ProjectName 'Smoke Test Project'
 
@@ -185,6 +188,13 @@ try {
     }
     & $updateInitializer -TargetPath $testRoot -Update
     if (-not $?) { throw 'Managed update failed.' }
+    if ([IO.File]::ReadAllText($existingManaged) -ne "# Existing managed-path content`n") {
+        throw 'Update changed a pre-existing managed path without a trusted baseline.'
+    }
+    $unmanagedEntry = (Get-Content -LiteralPath (Join-Path $testRoot 'harness.lock.json') -Raw | ConvertFrom-Json).managedFiles | Where-Object { $_.path -eq 'docs/harness-configuration.md' } | Select-Object -First 1
+    if ($null -ne $unmanagedEntry.baselineHash) {
+        throw 'An unmanaged pre-existing path received a false lock baseline.'
+    }
     if ((Get-Content -LiteralPath $targetStatus -Raw) -notmatch 'Upstream smoke update') {
         throw 'Managed update did not install upstream content.'
     }
@@ -207,6 +217,25 @@ try {
     $updatedLock = Get-Content -LiteralPath (Join-Path $testRoot 'harness.lock.json') -Raw | ConvertFrom-Json
     if ($updatedLock.harnessVersion -ne '0.2.1-test' -or 'docs/new-managed.md' -notin @($updatedLock.managedFiles.path)) {
         throw 'Update did not record the new managed file and version in the lock.'
+    }
+
+    Add-Content -LiteralPath $upstreamStatus -Value "`n# Converged upstream update"
+    Copy-Item -LiteralPath $upstreamStatus -Destination $targetStatus -Force
+    & $updateInitializer -TargetPath $testRoot -Update
+    if (-not $?) { throw 'Update rejected a local file already equal to upstream.' }
+    $convergedLock = Get-Content -LiteralPath (Join-Path $testRoot 'harness.lock.json') -Raw | ConvertFrom-Json
+    $convergedEntry = $convergedLock.managedFiles | Where-Object { $_.path -eq 'scripts/harness-status.ps1' } | Select-Object -First 1
+    if ($convergedEntry.baselineHash -ne (Get-FileHash -LiteralPath $targetStatus -Algorithm SHA256).Hash) {
+        throw 'Update did not advance the baseline for converged local and upstream content.'
+    }
+
+    ($updateManifest.files | Where-Object { $_.path -eq 'docs/new-managed.md' }).ownership = 'project'
+    $updateManifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $updateManifestPath -Encoding UTF8
+    & $updateInitializer -TargetPath $testRoot -Update
+    if (-not $?) { throw 'Managed-to-project ownership transition failed.' }
+    $ownershipLock = Get-Content -LiteralPath (Join-Path $testRoot 'harness.lock.json') -Raw | ConvertFrom-Json
+    if ('docs/new-managed.md' -in @($ownershipLock.managedFiles.path)) {
+        throw 'Managed-to-project ownership transition retained a managed lock entry.'
     }
 
     Add-Content -LiteralPath $targetStatus -Value "`n# Local conflicting update"

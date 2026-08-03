@@ -37,6 +37,6 @@
     { "path": "docs/workflows/project-start.md", "layer": "standard", "ownership": "managed" },
     { "path": "docs/workflows/project-onboarding.md", "layer": "standard", "ownership": "managed" },
     { "path": "scripts/check-doc-drift.ps1", "layer": "standard", "ownership": "managed" },
-    { "path": "tests/harness/README.md", "layer": "standard", "ownership": "managed" }
+    { "path": "tests/harness/README.md", "layer": "standard", "ownership": "project" }
   ]
 }

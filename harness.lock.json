@@ -7,12 +7,12 @@
                          {
                              "path":  "CLAUDE.md",
                              "ownership":  "managed",
-                             "baselineHash":  null
+                             "baselineHash":  "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
                          },
                          {
                              "path":  "docs/harness-configuration.md",
                              "ownership":  "managed",
-                             "baselineHash":  null
+                             "baselineHash":  ""
                          },
                          {
                              "path":  "scripts/check-harness.ps1",
@@ -102,7 +102,7 @@
                          {
                              "path":  "docs/agent-compatibility.md",
                              "ownership":  "managed",
-                             "baselineHash":  null
+                             "baselineHash":  ""
                          },
                          {
                              "path":  "docs/capabilities.md",
@@ -137,17 +137,12 @@
                          {
                              "path":  "docs/workflows/project-onboarding.md",
                              "ownership":  "managed",
-                             "baselineHash":  "0CFCF7028216AA4D4D9186D3DBE68806B4A88553967DAF8A38D4D7B5A36BD139"
+                             "baselineHash":  "149A0E99CEC9BBCA7FE2BECB28FD976CA6553AE578E18F542D3C6B69EC4B64D3"
                          },
                          {
                              "path":  "scripts/check-doc-drift.ps1",
                              "ownership":  "managed",
                              "baselineHash":  "230A3CF6782EDA31F506459156511304C722F83D2C016A4F56D5A9804ED81C30"
-                         },
-                         {
-                             "path":  "tests/harness/README.md",
-                             "ownership":  "managed",
-                             "baselineHash":  "BA4D6872D2DA807DDE746D97698BAF0AEBAA73F45834AAF409B675CFCEC36BBC"
                          }
                      ]
 }

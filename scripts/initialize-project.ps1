@@ -107,6 +107,19 @@ function Get-TextHash {
     }
 }
 
+function Get-FileContentHash {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $stream = [IO.File]::OpenRead($Path)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '')
+    } finally {
+        $sha.Dispose()
+        $stream.Dispose()
+    }
+}
+
 function Write-Utf8NoBom {
     param([Parameter(Mandatory = $true)][string]$Path, [Parameter(Mandatory = $true)][string]$Content)
 
@@ -158,7 +171,9 @@ if ($Update) {
     $managedManifestPaths = @($manifest.files | Where-Object { $_.layer -in $selectedLayers -and $_.ownership -eq 'managed' } | ForEach-Object { [string]$_.path })
     $changes = @()
     $conflicts = @()
+    $unmanaged = @()
     $nextManagedFiles = @()
+    $lockStateChanged = $false
     foreach ($manifestFile in @($manifest.files | Where-Object { $_.layer -in $selectedLayers -and $_.ownership -eq 'managed' })) {
         $relativePath = [string]$manifestFile.path
         $entry = $lockByPath[$relativePath]
@@ -184,25 +199,34 @@ if ($Update) {
             $conflicts += "$relativePath (local file missing)"
             continue
         }
-        $localHash = (Get-FileHash -LiteralPath $destinationPath -Algorithm SHA256).Hash
+        $localHash = Get-FileContentHash -Path $destinationPath
         $baseHash = [string]$entry.baselineHash
         if ([string]::IsNullOrWhiteSpace($baseHash)) {
-            $conflicts += "$relativePath (missing lock baseline)"
+            if ($localHash -eq $upstreamHash) { $lockStateChanged = $true }
+            else { $unmanaged += $relativePath }
+        } elseif ($localHash -eq $upstreamHash) {
+            if ($baseHash -ne $upstreamHash) { $lockStateChanged = $true }
         } elseif ($localHash -ne $baseHash -and $upstreamHash -ne $baseHash) {
             $conflicts += "$relativePath (local and upstream changes overlap)"
         } elseif ($localHash -eq $baseHash -and $upstreamHash -ne $baseHash) {
             $changes += [pscustomobject]@{ Path = $relativePath; Destination = $destinationPath; Content = $content; Hash = $upstreamHash; NewFile = $false }
         }
-        $nextManagedFiles += [ordered]@{ path = $relativePath; ownership = 'managed'; baselineHash = if ($localHash -eq $baseHash) { $upstreamHash } else { $baseHash } }
+        $nextManagedFiles += [ordered]@{ path = $relativePath; ownership = 'managed'; baselineHash = if ($localHash -eq $upstreamHash -or $localHash -eq $baseHash) { $upstreamHash } elseif ([string]::IsNullOrWhiteSpace($baseHash)) { $null } else { $baseHash } }
     }
     foreach ($entry in @($lock.managedFiles)) {
         if ([string]$entry.path -notin $managedManifestPaths) {
-            $conflicts += "$($entry.path) (managed file removed upstream)"
+            $previousManifestFile = $manifestByPath[[string]$entry.path]
+            if ($null -ne $previousManifestFile -and $previousManifestFile.ownership -eq 'project') {
+                $lockStateChanged = $true
+            } else {
+                $conflicts += "$($entry.path) (managed file removed upstream)"
+            }
         }
     }
-    $lockMetadataChanged = ([string]$lock.harnessVersion -ne [string]$manifest.harnessVersion)
-    Write-Host "Update plan: $($changes.Count) file update(s), $($conflicts.Count) conflict(s)."
+    $lockMetadataChanged = $lockStateChanged -or ([string]$lock.harnessVersion -ne [string]$manifest.harnessVersion)
+    Write-Host "Update plan: $($changes.Count) file update(s), $($unmanaged.Count) unmanaged skip(s), $($conflicts.Count) conflict(s)."
     foreach ($change in $changes) { Write-Host "UPDATE   $($change.Path)" }
+    foreach ($relativePath in $unmanaged) { Write-Host "SKIP     $relativePath (no trusted baseline)" -ForegroundColor Yellow }
     if ($lockMetadataChanged) { Write-Host "UPDATE   harness.lock.json ($($lock.harnessVersion) -> $($manifest.harnessVersion))" }
     foreach ($conflict in $conflicts) { Write-Host "CONFLICT $conflict" -ForegroundColor Red }
     if ($conflicts.Count -gt 0) { exit 1 }
@@ -308,7 +332,7 @@ if ((-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) -or $Force) {
             continue
         }
 
-        $hash = (Get-FileHash -LiteralPath $destinationPath -Algorithm SHA256).Hash
+        $hash = Get-FileContentHash -Path $destinationPath
         $managedFiles += [ordered]@{
             path = $relativePath
             ownership = 'managed'
