@@ -2,6 +2,8 @@
 
 `harness.config.json` 保存本项目确认后的 Harness 配置。
 
+`harness.lock.json` 保存安装版本和受管文件基线，供只读 `harness-status.ps1` 和后续安全更新使用。
+
 ## 字段
 
 | 字段 | 类型 | 说明 |

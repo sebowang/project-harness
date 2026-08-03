@@ -9,6 +9,8 @@
     { "path": "docs/verification.md", "layer": "base", "ownership": "project" },
     { "path": "scripts/check-harness.ps1", "layer": "base", "ownership": "managed" },
     { "path": "scripts/check-readiness.ps1", "layer": "base", "ownership": "managed" },
+    { "path": "scripts/harness-doctor.ps1", "layer": "base", "ownership": "managed" },
+    { "path": "scripts/harness-status.ps1", "layer": "base", "ownership": "managed" },
     { "path": "scripts/verify.ps1", "layer": "base", "ownership": "managed" },
 
     { "path": ".agents/skills/adversarial-review/SKILL.md", "layer": "standard", "ownership": "managed" },

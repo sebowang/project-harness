@@ -113,6 +113,17 @@ if ($manifest.schemaVersion -ne 1) {
     throw "Unsupported template manifest schemaVersion: $($manifest.schemaVersion)"
 }
 
+$selectedLayers = @('base')
+if ($Profile -eq 'Standard') {
+    $selectedLayers += 'standard'
+}
+$selectedFiles = @($manifest.files | Where-Object { $_.layer -in $selectedLayers })
+$preExistingPaths = @{}
+foreach ($file in $selectedFiles) {
+    $destinationPath = Join-Path $target ([string]$file.path)
+    $preExistingPaths[[string]$file.path] = Test-Path -LiteralPath $destinationPath -PathType Leaf
+}
+
 Write-Host "Project Harness initialization"
 Write-Host "Target : $target"
 Write-Host "Profile: $Profile"
@@ -123,11 +134,7 @@ if ($Profile -eq 'Standard') {
     Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'standard') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent
 }
 
-$selectedLayers = @('base')
-if ($Profile -eq 'Standard') {
-    $selectedLayers += 'standard'
-}
-$requiredPaths = @('harness.config.json') + @(
+$requiredPaths = @('harness.config.json', 'harness.lock.json') + @(
     $manifest.files |
         Where-Object { $_.layer -in $selectedLayers } |
         ForEach-Object { [string]$_.path }
@@ -155,6 +162,40 @@ if ((-not (Test-Path -LiteralPath $configPath)) -or $Force) {
     }
 } else {
     Write-Host 'SKIP   harness.config.json'
+}
+
+$lockPath = Join-Path $target 'harness.lock.json'
+if ((-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) -or $Force) {
+    $managedFiles = @()
+    foreach ($file in $selectedFiles | Where-Object { $_.ownership -eq 'managed' }) {
+        $relativePath = [string]$file.path
+        $destinationPath = Join-Path $target $relativePath
+        if (-not (Test-Path -LiteralPath $destinationPath -PathType Leaf)) {
+            continue
+        }
+
+        $hash = (Get-FileHash -LiteralPath $destinationPath -Algorithm SHA256).Hash
+        $managedFiles += [ordered]@{
+            path = $relativePath
+            ownership = 'managed'
+            baselineHash = if ($preExistingPaths[$relativePath]) { $null } else { $hash }
+        }
+    }
+
+    $lock = [ordered]@{
+        schemaVersion = 1
+        harnessVersion = [string]$manifest.harnessVersion
+        profile = $Profile
+        projectName = $ProjectName
+        managedFiles = $managedFiles
+    }
+    $lockJson = $lock | ConvertTo-Json -Depth 8
+    if ($PSCmdlet.ShouldProcess($lockPath, 'Install Harness lock')) {
+        [IO.File]::WriteAllText($lockPath, $lockJson + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
+        Write-Host 'WRITE  harness.lock.json'
+    }
+} else {
+    Write-Host 'SKIP   harness.lock.json'
 }
 
 Write-Host ''

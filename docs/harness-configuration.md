@@ -2,6 +2,8 @@
 
 `harness.config.json` 保存目标项目确认后的 Harness 配置。初始化器创建初始配置；项目可以补充验证命令、漂移断言和 readiness 豁免，但不得删除未知字段后假定旧工具仍兼容。
 
+`harness.lock.json` 是 Harness 管理的安装基线，记录版本和受管文件的 SHA-256。不要手工修改它来掩盖文件变化；后续 `status` 和 `update` 会使用它判断是否可以安全更新。
+
 ## 顶层字段
 
 | 字段 | 类型 | 说明 |

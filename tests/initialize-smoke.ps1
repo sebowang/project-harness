@@ -36,6 +36,7 @@ try {
         'AGENTS.md',
         'CLAUDE.md',
         'harness.config.json',
+        'harness.lock.json',
         'docs\project-map.md',
         'docs\verification.md',
         'docs\decisions\README.md',
@@ -44,6 +45,8 @@ try {
         '.agents\skills\project-start\SKILL.md',
         '.claude\skills\project-start\SKILL.md',
         'scripts\check-readiness.ps1',
+        'scripts\harness-status.ps1',
+        'scripts\harness-doctor.ps1',
         'scripts\verify.ps1',
         'tests\harness\README.md'
     )
@@ -92,7 +95,22 @@ try {
         throw 'Generated harness verification failed.'
     }
 
+    & (Join-Path $testRoot 'scripts\harness-status.ps1')
+    if (-not $?) {
+        throw 'Clean Harness status failed.'
+    }
+
+    $statusScript = Join-Path $testRoot 'scripts\harness-status.ps1'
+    $statusBytes = [IO.File]::ReadAllBytes($statusScript)
+    Add-Content -LiteralPath $statusScript -Value "`n# Local smoke modification"
+    $statusOutput = (& $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $statusScript 2>&1 | Out-String)
+    if ($statusOutput -notmatch 'MODIFIED\s+scripts/harness-status\.ps1') {
+        throw 'Harness status did not report a modified managed file.'
+    }
+    [IO.File]::WriteAllBytes($statusScript, $statusBytes)
+
     Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\verify.ps1') -Arguments @('-Scope', 'All')
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\harness-doctor.ps1')
 
     $configPath = Join-Path $testRoot 'harness.config.json'
     $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
@@ -111,7 +129,7 @@ try {
     if ($manifestDifferences.Count -gt 0) {
         throw "Template files and manifest differ: $($manifestDifferences | Out-String)"
     }
-    $templatePaths = @('harness.config.json') + $templateFilePaths
+    $templatePaths = @('harness.config.json', 'harness.lock.json') + $templateFilePaths
     $pathDifferences = @(Compare-Object -ReferenceObject @($templatePaths | Sort-Object -Unique) -DifferenceObject @($config.requiredPaths | Sort-Object -Unique))
     if ($pathDifferences.Count -gt 0) {
         throw "Template files and requiredPaths differ: $($pathDifferences | Out-String)"
@@ -139,6 +157,10 @@ try {
     & (Join-Path $testRoot 'scripts\verify.ps1') -Scope All
     if (-not $?) {
         throw 'Ready harness verification failed.'
+    }
+    & (Join-Path $testRoot 'scripts\harness-doctor.ps1')
+    if (-not $?) {
+        throw 'Doctor failed for a ready Harness.'
     }
 
     $validConfig = Get-Content -LiteralPath $configPath -Raw

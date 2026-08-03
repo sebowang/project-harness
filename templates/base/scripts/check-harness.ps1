@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $configPath = Join-Path $repositoryRoot 'harness.config.json'
+$lockPath = Join-Path $repositoryRoot 'harness.lock.json'
 $errors = New-Object System.Collections.Generic.List[string]
 
 function Get-CheckedRepositoryPath {
@@ -20,11 +21,33 @@ if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
     exit 1
 }
 
+if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
+    Write-Error 'Missing harness.lock.json.'
+    exit 1
+}
+
 try {
     $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
 } catch {
     Write-Error "Invalid harness.config.json: $($_.Exception.Message)"
     exit 1
+}
+
+try {
+    $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
+} catch {
+    Write-Error "Invalid harness.lock.json: $($_.Exception.Message)"
+    exit 1
+}
+
+if ($lock.schemaVersion -ne 1) {
+    $errors.Add("Unsupported lock schemaVersion: $($lock.schemaVersion)")
+}
+if ([string]::IsNullOrWhiteSpace([string]$lock.harnessVersion)) {
+    $errors.Add('Missing lock harnessVersion')
+}
+if ($null -eq $lock.PSObject.Properties['managedFiles'] -or $lock.managedFiles -isnot [System.Array]) {
+    $errors.Add('Lock managedFiles must be an array')
 }
 
 if ($config.schemaVersion -ne 1) {

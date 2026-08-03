@@ -68,6 +68,7 @@ Standard 模式会补充以下结构：
 AGENTS.md
 CLAUDE.md
 harness.config.json
+harness.lock.json
 docs/
   harness-configuration.md
   project-map.md
@@ -85,6 +86,8 @@ scripts/
   check-harness.ps1
   check-readiness.ps1
   check-doc-drift.ps1
+  harness-status.ps1
+  harness-doctor.ps1
   verify.ps1
 tests/harness/README.md
 ```
@@ -121,6 +124,13 @@ tests/harness/README.md
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
+```
+
+只读诊断：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/harness-status.ps1
+powershell -ExecutionPolicy Bypass -File scripts/harness-doctor.ps1
 ```
 
 ## 原则与工作流
