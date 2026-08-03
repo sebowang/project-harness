@@ -2,8 +2,8 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $blockedPatterns = @(
-    @{ Pattern = 'EasyBIM'; Description = 'private example project name' },
-    @{ Pattern = 'Bow-Lin-project-harness'; Description = 'retired reference project name' },
+    @{ Pattern = ('Easy' + 'BIM'); Description = 'private example project name' },
+    @{ Pattern = ('Bow-Lin-' + 'project-harness'); Description = 'retired reference project name' },
     @{ Pattern = '[A-Za-z]:\\(?:Users|Work Space)\\'; Description = 'absolute user or workspace path' }
 )
 $textExtensions = @('.json', '.md', '.ps1', '.txt', '.yml', '.yaml')

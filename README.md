@@ -46,6 +46,13 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 
 更新只自动替换 lock 基线后未被项目修改的受管文件。双方修改同一路径、文件缺失或新增受管文件与本地路径碰撞时，整次更新会在写入前停止；成功更新前的文件和 lock 保存在 `.harness-backup/<timestamp>/`。
 
+当新版本不再管理旧文件时，默认保留该文件并报告为 `ORPHANED`，不会阻塞其他更新。确认不再需要且文件仍未被本地修改时，显式清理：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\your-repository" -Update -Prune
+```
+
 初始化完成后，进入目标仓库执行：
 
 ```powershell

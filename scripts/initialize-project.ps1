@@ -10,7 +10,9 @@ param(
 
     [switch]$Force,
 
-    [switch]$Update
+    [switch]$Update,
+
+    [switch]$Prune
 )
 
 $ErrorActionPreference = 'Stop'
@@ -133,6 +135,9 @@ if ($Update -and -not (Test-Path -LiteralPath $target -PathType Container)) {
 if ($Update -and ($Force -or $PSBoundParameters.ContainsKey('Profile') -or $PSBoundParameters.ContainsKey('ProjectName'))) {
     throw '-Update uses profile and project name from harness.lock.json and cannot be combined with -Force, -Profile, or -ProjectName.'
 }
+if ($Prune -and -not $Update) {
+    throw '-Prune is only valid together with -Update.'
+}
 if (-not (Test-Path -LiteralPath $target)) {
     if ($PSCmdlet.ShouldProcess($target, 'Create target directory')) {
         New-Item -ItemType Directory -Path $target -Force | Out-Null
@@ -172,6 +177,8 @@ if ($Update) {
     $changes = @()
     $conflicts = @()
     $unmanaged = @()
+    $orphans = @()
+    $prunes = @()
     $nextManagedFiles = @()
     $lockStateChanged = $false
     foreach ($manifestFile in @($manifest.files | Where-Object { $_.layer -in $selectedLayers -and $_.ownership -eq 'managed' })) {
@@ -219,20 +226,49 @@ if ($Update) {
             if ($null -ne $previousManifestFile -and $previousManifestFile.ownership -eq 'project') {
                 $lockStateChanged = $true
             } else {
-                $conflicts += "$($entry.path) (managed file removed upstream)"
+                $relativePath = [string]$entry.path
+                $destinationPath = Join-Path $target $relativePath
+                if (-not (Test-Path -LiteralPath $destinationPath)) {
+                    $lockStateChanged = $true
+                    continue
+                }
+                if (-not (Test-Path -LiteralPath $destinationPath -PathType Leaf)) {
+                    if ($Prune) { $conflicts += "$relativePath (orphaned path is not a regular file)" }
+                    else {
+                        $orphans += $relativePath
+                        $nextManagedFiles += $entry
+                    }
+                    continue
+                }
+
+                $baseHash = [string]$entry.baselineHash
+                $localHash = Get-FileContentHash -Path $destinationPath
+                if (-not $Prune) {
+                    $orphans += $relativePath
+                    $nextManagedFiles += $entry
+                } elseif ([string]::IsNullOrWhiteSpace($baseHash)) {
+                    $conflicts += "$relativePath (orphaned file has no trusted baseline)"
+                } elseif ($localHash -ne $baseHash) {
+                    $conflicts += "$relativePath (orphaned file was modified locally)"
+                } else {
+                    $prunes += [pscustomobject]@{ Path = $relativePath; Destination = $destinationPath }
+                }
             }
         }
     }
     $lockMetadataChanged = $lockStateChanged -or ([string]$lock.harnessVersion -ne [string]$manifest.harnessVersion)
-    Write-Host "Update plan: $($changes.Count) file update(s), $($unmanaged.Count) unmanaged skip(s), $($conflicts.Count) conflict(s)."
+    Write-Host "Update plan: $($changes.Count) file update(s), $($prunes.Count) orphan prune(s), $($orphans.Count) orphaned file(s), $($unmanaged.Count) unmanaged skip(s), $($conflicts.Count) conflict(s)."
     foreach ($change in $changes) { Write-Host "UPDATE   $($change.Path)" }
+    foreach ($prunePlan in $prunes) { Write-Host "PRUNE    $($prunePlan.Path)" -ForegroundColor Yellow }
+    foreach ($relativePath in $orphans) { Write-Host "ORPHANED $relativePath (retained; run -Update -Prune to remove an unmodified file)" -ForegroundColor Yellow }
     foreach ($relativePath in $unmanaged) { Write-Host "SKIP     $relativePath (no trusted baseline)" -ForegroundColor Yellow }
     if ($lockMetadataChanged) { Write-Host "UPDATE   harness.lock.json ($($lock.harnessVersion) -> $($manifest.harnessVersion))" }
     foreach ($conflict in $conflicts) { Write-Host "CONFLICT $conflict" -ForegroundColor Red }
     if ($conflicts.Count -gt 0) { exit 1 }
-    if ($changes.Count -eq 0 -and -not $lockMetadataChanged) { Write-Host 'No managed file updates are required.'; exit 0 }
+    if ($changes.Count -eq 0 -and $prunes.Count -eq 0 -and -not $lockMetadataChanged) { Write-Host 'No managed file updates are required.'; exit 0 }
     $backupRoot = Join-Path $target (Join-Path '.harness-backup' (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
     $written = New-Object System.Collections.Generic.List[object]
+    $removed = New-Object System.Collections.Generic.List[object]
     try {
         if (-not $WhatIfPreference) {
             New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
@@ -246,6 +282,15 @@ if ($Update) {
                 New-Item -ItemType Directory -Path (Split-Path -Parent $change.Destination) -Force | Out-Null
                 $written.Add($change)
                 Write-Utf8NoBom -Path $change.Destination -Content $change.Content
+            }
+        }
+        foreach ($prunePlan in $prunes) {
+            if ($PSCmdlet.ShouldProcess($prunePlan.Destination, 'Remove orphaned managed Harness file')) {
+                $backupPath = Join-Path $backupRoot $prunePlan.Path
+                New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
+                Copy-Item -LiteralPath $prunePlan.Destination -Destination $backupPath -Force
+                $removed.Add($prunePlan)
+                Remove-Item -LiteralPath $prunePlan.Destination -Force
             }
         }
         if (-not $WhatIfPreference) {
@@ -262,6 +307,10 @@ if ($Update) {
             $backupPath = Join-Path $backupRoot $change.Path
             if (Test-Path -LiteralPath $backupPath -PathType Leaf) { Copy-Item -LiteralPath $backupPath -Destination $change.Destination -Force }
             elseif ($change.NewFile -and (Test-Path -LiteralPath $change.Destination)) { Remove-Item -LiteralPath $change.Destination -Force }
+        }
+        foreach ($prunePlan in $removed) {
+            $backupPath = Join-Path $backupRoot $prunePlan.Path
+            if (Test-Path -LiteralPath $backupPath -PathType Leaf) { Copy-Item -LiteralPath $backupPath -Destination $prunePlan.Destination -Force }
         }
         $lockBackupPath = Join-Path $backupRoot 'harness.lock.json'
         if (Test-Path -LiteralPath $lockBackupPath -PathType Leaf) { Copy-Item -LiteralPath $lockBackupPath -Destination $lockPath -Force }

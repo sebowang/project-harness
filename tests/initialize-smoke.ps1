@@ -238,6 +238,45 @@ try {
         throw 'Managed-to-project ownership transition retained a managed lock entry.'
     }
 
+    $retiredRelativePath = 'docs/retired-managed.md'
+    $retiredContent = "# Retired managed file`n"
+    $updateManifest.files += [pscustomobject]@{ path = $retiredRelativePath; layer = 'base'; ownership = 'managed' }
+    $updateManifest.harnessVersion = '0.2.2-test'
+    $updateManifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $updateManifestPath -Encoding UTF8
+    $retiredSource = Join-Path $updateSourceRoot 'templates\base\docs\retired-managed.md'
+    [IO.File]::WriteAllText($retiredSource, $retiredContent, (New-Object Text.UTF8Encoding($false)))
+    & $updateInitializer -TargetPath $testRoot -Update
+    if (-not $?) { throw 'Update did not install the soon-to-be-retired managed file.' }
+
+    $updateManifest.files = @($updateManifest.files | Where-Object { $_.path -ne $retiredRelativePath })
+    $updateManifest.harnessVersion = '0.2.3-test'
+    $updateManifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $updateManifestPath -Encoding UTF8
+    Remove-Item -LiteralPath $retiredSource -Force
+    & $updateInitializer -TargetPath $testRoot -Update
+    if (-not $?) { throw 'An orphaned managed file blocked an otherwise safe update.' }
+    $retiredTarget = Join-Path $testRoot $retiredRelativePath
+    $orphanLock = Get-Content -LiteralPath (Join-Path $testRoot 'harness.lock.json') -Raw | ConvertFrom-Json
+    if (-not (Test-Path -LiteralPath $retiredTarget -PathType Leaf) -or $retiredRelativePath -notin @($orphanLock.managedFiles.path)) {
+        throw 'Default update did not preserve the orphaned file and lock entry.'
+    }
+
+    Add-Content -LiteralPath $retiredTarget -Value '# Local orphan modification'
+    Assert-ScriptFails -Path $updateInitializer -Arguments @('-TargetPath', $testRoot, '-Update', '-Prune')
+    if (-not (Test-Path -LiteralPath $retiredTarget -PathType Leaf)) {
+        throw 'Prune removed a locally modified orphaned file.'
+    }
+
+    [IO.File]::WriteAllText($retiredTarget, $retiredContent, (New-Object Text.UTF8Encoding($false)))
+    & $updateInitializer -TargetPath $testRoot -Update -Prune
+    if (-not $?) { throw 'Prune rejected an unmodified orphaned file.' }
+    $prunedLock = Get-Content -LiteralPath (Join-Path $testRoot 'harness.lock.json') -Raw | ConvertFrom-Json
+    if ((Test-Path -LiteralPath $retiredTarget) -or $retiredRelativePath -in @($prunedLock.managedFiles.path)) {
+        throw 'Prune retained an unmodified orphaned file or lock entry.'
+    }
+    if (-not (Get-ChildItem -LiteralPath (Join-Path $testRoot '.harness-backup') -Recurse -Filter 'retired-managed.md' -File | Select-Object -First 1)) {
+        throw 'Prune did not back up the orphaned file before removal.'
+    }
+
     Add-Content -LiteralPath $targetStatus -Value "`n# Local conflicting update"
     Add-Content -LiteralPath $upstreamStatus -Value "`n# Second upstream update"
     $conflictBytes = [IO.File]::ReadAllBytes($targetStatus)

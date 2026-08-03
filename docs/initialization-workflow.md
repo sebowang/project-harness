@@ -58,6 +58,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 - 上游变化且本地仍等于基线：自动更新。
 - 新的受管文件且目标路径不存在：自动创建。
 - 本地与上游都变化、受管文件缺失或路径碰撞：整次更新在写入前停止。
+- 上游已移除的受管文件：默认报告为 `ORPHANED` 并保留；只有 `-Update -Prune` 才会删除仍等于受信基线的文件。无基线、已修改或非普通文件的孤儿路径必须人工处理。
 - 项目所有文件和 `harness.config.json`：不自动覆盖。
 - 成功更新前备份受影响文件和原 lock；写入失败时尝试恢复到备份状态。
 
