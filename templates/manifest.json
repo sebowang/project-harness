@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "harnessVersion": "0.2.0-dev",
+  "files": [
+    { "path": "AGENTS.md", "layer": "base", "ownership": "project" },
+    { "path": "CLAUDE.md", "layer": "base", "ownership": "managed" },
+    { "path": "docs/harness-configuration.md", "layer": "base", "ownership": "managed" },
+    { "path": "docs/project-map.md", "layer": "base", "ownership": "project" },
+    { "path": "docs/verification.md", "layer": "base", "ownership": "project" },
+    { "path": "scripts/check-harness.ps1", "layer": "base", "ownership": "managed" },
+    { "path": "scripts/check-readiness.ps1", "layer": "base", "ownership": "managed" },
+    { "path": "scripts/verify.ps1", "layer": "base", "ownership": "managed" },
+
+    { "path": ".agents/skills/adversarial-review/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".agents/skills/change-plan/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".agents/skills/harness-authoring/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".agents/skills/project-handoff/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".agents/skills/project-start/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".claude/skills/adversarial-review/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".claude/skills/change-plan/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".claude/skills/harness-authoring/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".claude/skills/project-handoff/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": ".claude/skills/project-start/SKILL.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/agent-compatibility.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/decisions/README.md", "layer": "standard", "ownership": "project" },
+    { "path": "docs/prd/README.md", "layer": "standard", "ownership": "project" },
+    { "path": "docs/reference/README.md", "layer": "standard", "ownership": "project" },
+    { "path": "docs/workflows/adversarial-review.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/workflows/change-plan.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/workflows/harness-authoring.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/workflows/project-handoff.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/workflows/project-start.md", "layer": "standard", "ownership": "managed" },
+    { "path": "scripts/check-doc-drift.ps1", "layer": "standard", "ownership": "managed" },
+    { "path": "tests/harness/README.md", "layer": "standard", "ownership": "managed" }
+  ]
+}

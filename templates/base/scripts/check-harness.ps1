@@ -31,6 +31,10 @@ if ($config.schemaVersion -ne 1) {
     $errors.Add("Unsupported schemaVersion: $($config.schemaVersion)")
 }
 
+if ([string]::IsNullOrWhiteSpace([string]$config.harnessVersion)) {
+    $errors.Add('Missing harnessVersion')
+}
+
 if ($config.profile -notin @('Light', 'Standard')) {
     $errors.Add("Unsupported profile: $($config.profile)")
 }

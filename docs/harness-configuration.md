@@ -7,6 +7,7 @@
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `schemaVersion` | number | 配置结构版本；当前只支持 `1` |
+| `harnessVersion` | string | 创建或最近迁移该配置的 Harness 版本 |
 | `profile` | `Light` 或 `Standard` | 初始化级别 |
 | `projectName` | string | 目标项目显示名称 |
 | `requiredPaths` | string array | Harness 必需文件；当前条目都必须是普通文件 |

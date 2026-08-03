@@ -106,6 +106,12 @@ if (-not $ProjectName) {
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $templatesRoot = Join-Path $repositoryRoot 'templates'
+$manifestPath = Join-Path $templatesRoot 'manifest.json'
+$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+
+if ($manifest.schemaVersion -ne 1) {
+    throw "Unsupported template manifest schemaVersion: $($manifest.schemaVersion)"
+}
 
 Write-Host "Project Harness initialization"
 Write-Host "Target : $target"
@@ -117,48 +123,21 @@ if ($Profile -eq 'Standard') {
     Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'standard') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent
 }
 
-$requiredPaths = @(
-    'AGENTS.md',
-    'CLAUDE.md',
-    'harness.config.json',
-    'docs/harness-configuration.md',
-    'docs/project-map.md',
-    'docs/verification.md',
-    'scripts/check-harness.ps1',
-    'scripts/check-readiness.ps1',
-    'scripts/verify.ps1'
-)
-
+$selectedLayers = @('base')
 if ($Profile -eq 'Standard') {
-    $requiredPaths += @(
-        'docs/prd/README.md',
-        'docs/decisions/README.md',
-        'docs/reference/README.md',
-        'docs/agent-compatibility.md',
-        'docs/workflows/project-start.md',
-        'docs/workflows/change-plan.md',
-        'docs/workflows/adversarial-review.md',
-        'docs/workflows/harness-authoring.md',
-        'docs/workflows/project-handoff.md',
-        'scripts/check-doc-drift.ps1',
-        'tests/harness/README.md',
-        '.agents/skills/project-start/SKILL.md',
-        '.agents/skills/change-plan/SKILL.md',
-        '.agents/skills/adversarial-review/SKILL.md',
-        '.agents/skills/harness-authoring/SKILL.md',
-        '.agents/skills/project-handoff/SKILL.md',
-        '.claude/skills/project-start/SKILL.md',
-        '.claude/skills/change-plan/SKILL.md',
-        '.claude/skills/adversarial-review/SKILL.md',
-        '.claude/skills/harness-authoring/SKILL.md',
-        '.claude/skills/project-handoff/SKILL.md'
-    )
+    $selectedLayers += 'standard'
 }
+$requiredPaths = @('harness.config.json') + @(
+    $manifest.files |
+        Where-Object { $_.layer -in $selectedLayers } |
+        ForEach-Object { [string]$_.path }
+)
 
 $configPath = Join-Path $target 'harness.config.json'
 if ((-not (Test-Path -LiteralPath $configPath)) -or $Force) {
     $config = [ordered]@{
         schemaVersion = 1
+        harnessVersion = [string]$manifest.harnessVersion
         profile = $Profile
         projectName = $ProjectName
         requiredPaths = $requiredPaths

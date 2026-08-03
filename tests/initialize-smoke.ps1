@@ -97,14 +97,21 @@ try {
     $configPath = Join-Path $testRoot 'harness.config.json'
     $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
 
-    $templatePaths = @('harness.config.json')
+    $templateFilePaths = @()
     foreach ($layerName in @('base', 'standard')) {
         $layerRoot = Join-Path $repositoryRoot "templates\$layerName"
         foreach ($file in Get-ChildItem -LiteralPath $layerRoot -Recurse -File) {
             $relativePath = $file.FullName.Substring($layerRoot.Length).TrimStart('\', '/').Replace('\', '/')
-            $templatePaths += $relativePath
+            $templateFilePaths += $relativePath
         }
     }
+    $manifest = Get-Content -LiteralPath (Join-Path $repositoryRoot 'templates\manifest.json') -Raw | ConvertFrom-Json
+    $manifestPaths = @($manifest.files | ForEach-Object { [string]$_.path })
+    $manifestDifferences = @(Compare-Object -ReferenceObject @($templateFilePaths | Sort-Object -Unique) -DifferenceObject @($manifestPaths | Sort-Object -Unique))
+    if ($manifestDifferences.Count -gt 0) {
+        throw "Template files and manifest differ: $($manifestDifferences | Out-String)"
+    }
+    $templatePaths = @('harness.config.json') + $templateFilePaths
     $pathDifferences = @(Compare-Object -ReferenceObject @($templatePaths | Sort-Object -Unique) -DifferenceObject @($config.requiredPaths | Sort-Object -Unique))
     if ($pathDifferences.Count -gt 0) {
         throw "Template files and requiredPaths differ: $($pathDifferences | Out-String)"
