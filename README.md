@@ -163,10 +163,6 @@ powershell -ExecutionPolicy Bypass -File scripts/harness-doctor.ps1
 - [Harness 配置](docs/harness-configuration.md)
 - [持续实施计划](docs/implementation-roadmap.md)
 
-## 与原始方案的关系
-
-本项目受到 Bow-Lin/project-harness 的分层、会话恢复和验证闭环思想启发，但重新设计了默认文件数量、Codex Skill 路径、Windows 支持、验证入口和安全边界。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-
 ## License
 
 [MIT](LICENSE)
