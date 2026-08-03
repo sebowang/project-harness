@@ -8,6 +8,7 @@ Project Harness v1 以 Git tag 和源码发布。PowerShell 脚本不需要编�
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tests/initialize-smoke.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/check-template-neutrality.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 git diff --check
 ```

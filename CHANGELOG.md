@@ -8,10 +8,11 @@
 
 - `Light` / `Standard` 非破坏性初始化，以及 `installed`、`ready`、`ready with waiver` 状态。
 - `harness.lock.json` 受管文件基线、`harness-status.ps1` 和 `harness-doctor.ps1`。
-- `-Update -WhatIf` 安全更新、受管文件所有权、冲突停止、备份和失败恢复。
+- `-Update -WhatIf` 安全更新、受管文件所有权、冲突停止、备份和失败恢复；上游移除文件默认保留为 `ORPHANED`，显式 `-Prune` 仅清理未修改文件。
 - 基于仓库证据的 `project-onboarding` proposal/confirm/apply 工作流。
-- 面向大项目的可选 `durable-plan`、架构、数据库和部署风险能力入口。
-- Windows PowerShell 5.1 与 PowerShell 7 Smoke Test CI，并完成仓库 dogfooding。
+- 面向大项目的可选 `durable-plan`、架构、数据库和部署风险能力入口，以及测试、系统化调试和跨会话计划工作流。
+- Codex、Claude Code 与 Trae 的项目规则入口，其中 Trae 使用 `.trae/rules/` 路由到 `AGENTS.md`。
+- 模板中立性检查、Windows PowerShell 5.1 与 PowerShell 7 Smoke Test CI，并完成仓库 dogfooding。
 
 ### Not Included
 
