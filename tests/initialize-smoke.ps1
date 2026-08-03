@@ -142,6 +142,13 @@ try {
     if ($ciCompatibility -notmatch 'GitLab CI' -or $ciCompatibility -notmatch 'CNB') {
         throw 'Generated CI platform compatibility guidance is incomplete.'
     }
+    if ($ciCompatibility -notmatch [regex]::Escape('examples/ci/') -or $ciCompatibility -notmatch [regex]::Escape('templates/manifest.json')) {
+        throw 'Generated CI guidance does not explain that examples are outside initializer management.'
+    }
+    $verificationGuidance = Get-Content -LiteralPath (Join-Path $testRoot 'docs\verification.md') -Raw
+    if ($verificationGuidance -notmatch [regex]::Escape('harness-status.ps1') -or $verificationGuidance -notmatch [regex]::Escape('harness.lock.json')) {
+        throw 'Generated verification guidance does not distinguish managed-file status from verification.'
+    }
     $manifest = Get-Content -LiteralPath (Join-Path $repositoryRoot 'templates\manifest.json') -Raw | ConvertFrom-Json
     $manifestPaths = @($manifest.files | ForEach-Object { [string]$_.path })
     $manifestDifferences = @(Compare-Object -ReferenceObject @($templateFilePaths | Sort-Object -Unique) -DifferenceObject @($manifestPaths | Sort-Object -Unique))

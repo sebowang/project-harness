@@ -20,6 +20,8 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 
 `Harness` 只验证安装结构。`All` 还会运行 readiness 检查和项目验证，是判断项目是否可以报告为 `ready` 的入口。
 
+`verify.ps1` 不比较受管文件与 `harness.lock.json` 中的安装基线。需要查看受管文件是否被本地修改、缺失或尚无可信基线时，运行 `scripts/harness-status.ps1`；它是状态诊断，不替代项目验证。
+
 ## 项目验证
 
 本仓库已验证的项目检查写入 `harness.config.json`：`powershell -NoProfile -ExecutionPolicy Bypass -File tests/initialize-smoke.ps1`。该 Smoke Test 在临时目录验证安装、Light/Standard、WhatIf、Harness readiness、状态/doctor、受管文件更新、新文件升级和冲突停止。

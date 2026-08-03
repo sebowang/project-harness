@@ -18,6 +18,8 @@ pwsh -NoProfile -File scripts/verify.ps1 -Scope All
 | GitLab CI | 提供 `examples/ci/gitlab-ci.yml` | Runner 必须提供 `pwsh`，示例不创建或管理 Runner |
 | CNB（cnb.cool） | 提供 `examples/ci/cnb.yml` 片段 | 使用前确认项目 Runner 已提供 `pwsh`，并按当前 CNB 配置规则合并 |
 
+`examples/ci/` 属于本 Harness 源仓库的参考资料，不在 `templates/manifest.json` 中，也不会被初始化器安装、更新或写入目标项目。
+
 示例只验证已配置的项目，不包含发布、数据库迁移、云权限、Secrets 或审批步骤。高风险操作必须由目标平台的环境权限、受保护分支、审批与密钥管理机械约束。
 
 ## Onboarding 勘察

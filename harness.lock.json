@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.1.0",
+    "harnessVersion":  "1.1.1",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "managedFiles":  [
@@ -142,7 +142,7 @@
                          {
                              "path":  "docs/ci-platform-compatibility.md",
                              "ownership":  "managed",
-                             "baselineHash":  "D605AFFD2223DA72E98C89BA0D4DEAF78DBBB2533BB15A21105BF79B2F72E03C"
+                             "baselineHash":  "A03FFD722E19A66DE779E4D421FCE1AEA92D91D4CDC09312F5CACD6BA875AF56"
                          },
                          {
                              "path":  "docs/capabilities.md",
