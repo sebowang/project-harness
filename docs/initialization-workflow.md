@@ -39,7 +39,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 - 生成 `harness.config.json`。
 - 不修改业务源码、依赖、数据库、部署脚本或 Git Hook。
 
-`-Force` 会覆盖同名 Harness 文件，只应在确认差异后使用。
+`-Force` 只覆盖 manifest 标记为 `managed` 的模板文件；`AGENTS.md`、项目地图、验证指南和 `harness.config.json` 等项目所有文件仍会保留。
 
 ## 持续维护
 

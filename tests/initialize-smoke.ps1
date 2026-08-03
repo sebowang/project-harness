@@ -204,6 +204,15 @@ try {
     if ((Get-Content -LiteralPath $targetStatus -Raw) -notmatch 'Upstream smoke update') {
         throw 'Managed update did not install upstream content.'
     }
+
+    $configBeforeForce = [IO.File]::ReadAllText($configPath)
+    & $initializer -TargetPath $testRoot -Profile Standard -ProjectName 'Changed By Force' -Force
+    if ([IO.File]::ReadAllText($existingAgents) -ne "# Existing rules`r`n") {
+        throw '-Force overwrote a project-owned AGENTS.md.'
+    }
+    if ([IO.File]::ReadAllText($configPath) -ne $configBeforeForce) {
+        throw '-Force overwrote project-owned harness.config.json.'
+    }
     if (-not (Get-ChildItem -LiteralPath (Join-Path $testRoot '.harness-backup') -Recurse -Filter 'harness-status.ps1' -File | Select-Object -First 1)) {
         throw 'Managed update did not create a backup.'
     }

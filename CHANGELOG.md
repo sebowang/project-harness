@@ -2,6 +2,13 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.0.1] - 2026-08-03
+
+### Fixed
+
+- `-Force` 现在只覆盖 manifest 标记为 `managed` 的模板文件，不再覆盖 `AGENTS.md`、项目文档、`harness.config.json` 或既有 lock。
+- 统一 Windows 与跨平台路径分隔符后再判断模板所有权。
+
 ## [1.0.0] - 2026-08-03
 
 ### Added

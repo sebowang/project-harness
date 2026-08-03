@@ -33,7 +33,8 @@ function Install-TemplateLayer {
         [Parameter(Mandatory = $true)][string]$LayerPath,
         [Parameter(Mandatory = $true)][string]$DestinationRoot,
         [Parameter(Mandatory = $true)][string]$ResolvedProjectName,
-        [Parameter(Mandatory = $true)][bool]$Overwrite
+        [Parameter(Mandatory = $true)][bool]$Overwrite,
+        [string[]]$ProjectOwnedPaths = @()
     )
 
     if (-not (Test-Path -LiteralPath $LayerPath -PathType Container)) {
@@ -44,6 +45,12 @@ function Install-TemplateLayer {
         $relativePath = Get-RelativePath -BasePath $LayerPath -ChildPath $sourceFile.FullName
         $destinationPath = Join-Path $DestinationRoot $relativePath
         $destinationDirectory = Split-Path -Parent $destinationPath
+
+        $normalizedRelativePath = $relativePath.Replace('\', '/')
+        if ((Test-Path -LiteralPath $destinationPath) -and ($normalizedRelativePath -in $ProjectOwnedPaths)) {
+            Write-Host "SKIP   $relativePath (project-owned; -Force does not overwrite project files)"
+            continue
+        }
 
         if ((Test-Path -LiteralPath $destinationPath) -and -not $Overwrite) {
             Write-Host "SKIP   $relativePath"
@@ -335,9 +342,10 @@ Write-Host "Target : $target"
 Write-Host "Profile: $Profile"
 Write-Host "Project: $ProjectName"
 
-Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'base') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent
+$projectOwnedPaths = @($selectedFiles | Where-Object { $_.ownership -eq 'project' } | ForEach-Object { [string]$_.path })
+Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'base') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent -ProjectOwnedPaths $projectOwnedPaths
 if ($Profile -eq 'Standard') {
-    Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'standard') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent
+    Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'standard') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent -ProjectOwnedPaths $projectOwnedPaths
 }
 
 $requiredPaths = @('harness.config.json', 'harness.lock.json') + @(
@@ -347,7 +355,7 @@ $requiredPaths = @('harness.config.json', 'harness.lock.json') + @(
 )
 
 $configPath = Join-Path $target 'harness.config.json'
-if ((-not (Test-Path -LiteralPath $configPath)) -or $Force) {
+if (-not (Test-Path -LiteralPath $configPath)) {
     $config = [ordered]@{
         schemaVersion = 1
         harnessVersion = [string]$manifest.harnessVersion
@@ -372,7 +380,7 @@ if ((-not (Test-Path -LiteralPath $configPath)) -or $Force) {
 }
 
 $lockPath = Join-Path $target 'harness.lock.json'
-if ((-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) -or $Force) {
+if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
     $managedFiles = @()
     foreach ($file in $selectedFiles | Where-Object { $_.ownership -eq 'managed' }) {
         $relativePath = [string]$file.path
