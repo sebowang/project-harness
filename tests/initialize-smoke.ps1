@@ -138,6 +138,12 @@ try {
     if (@($config.requiredPaths).Count -ne @($config.requiredPaths | Sort-Object -Unique).Count) {
         throw 'requiredPaths contains duplicate entries.'
     }
+    $goldenPath = Join-Path $repositoryRoot 'tests\golden\standard-required-paths.txt'
+    $goldenPaths = @(Get-Content -LiteralPath $goldenPath | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Trim().Replace('/', '\\') })
+    $actualStandardPaths = @($config.requiredPaths | ForEach-Object { ([string]$_).Replace('/', '\\') } | Sort-Object)
+    if ([string]::Join("`n", $goldenPaths) -ne [string]::Join("`n", $actualStandardPaths)) {
+        throw 'Standard requiredPaths differ from tests/golden/standard-required-paths.txt.'
+    }
 
     $config.projectValidation = @(
         [pscustomobject]@{
