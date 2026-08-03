@@ -39,6 +39,7 @@ try {
     $expectedPaths = @(
         'AGENTS.md',
         'CLAUDE.md',
+        '.trae\rules\project-harness.md',
         'harness.config.json',
         'harness.lock.json',
         'docs\project-map.md',
@@ -68,6 +69,11 @@ try {
     $claudeEntry = [IO.File]::ReadAllText((Join-Path $testRoot 'CLAUDE.md')).Trim()
     if ($claudeEntry -ne '@AGENTS.md') {
         throw 'CLAUDE.md does not import AGENTS.md.'
+    }
+
+    $traeEntry = [IO.File]::ReadAllText((Join-Path $testRoot '.trae\rules\project-harness.md'))
+    if ($traeEntry -notmatch 'AGENTS\.md' -or $traeEntry -notmatch 'docs/workflows/') {
+        throw 'Trae project rule does not route to AGENTS.md and public workflows.'
     }
 
     $workflowNames = @('project-start', 'project-onboarding', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff')

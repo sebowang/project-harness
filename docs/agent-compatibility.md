@@ -7,9 +7,9 @@
 ## 单一事实源
 
 ```text
-                         +-> Codex: .agents/skills/*/SKILL.md --+
-AGENTS.md <- CLAUDE.md   +-> Claude: .claude/skills/*/SKILL.md -+-> docs/workflows/*.md
-    ^                    +-> Trae: AGENTS.md -------------------+
+                         +-> Codex: .agents/skills/*/SKILL.md -----+
+AGENTS.md <- CLAUDE.md   +-> Claude: .claude/skills/*/SKILL.md ----+-> docs/workflows/*.md
+    ^                    +-> Trae: .trae/rules/project-harness.md -+
     |
 项目规则、文档路由和验证要求
 ```
@@ -19,7 +19,7 @@ AGENTS.md <- CLAUDE.md   +-> Claude: .claude/skills/*/SKILL.md -+-> docs/workflo
 - `docs/workflows/`：工具中立的完整工作流程。
 - `.agents/skills/`：Codex 自动发现入口，只引用公共工作流。
 - `.claude/skills/`：Claude Code 自动发现入口，只引用公共工作流。
-- Trae：从 `AGENTS.md` 的“公共工作流”章节读取并按需打开对应文档。
+- `.trae/rules/project-harness.md`：Trae 的项目规则发现入口，只路由到 `AGENTS.md` 和公共工作流。
 
 ## 为什么默认使用导入文件
 
@@ -32,7 +32,7 @@ Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AG
 初始化 Smoke Test 验证：
 
 1. `AGENTS.md` 和 `CLAUDE.md` 同时生成。
-2. `CLAUDE.md` 包含 `@AGENTS.md`。
+2. `CLAUDE.md` 包含 `@AGENTS.md`，Trae 规则入口指向 `AGENTS.md` 和 `docs/workflows/`。
 3. 六个公共工作流存在。
 4. Codex 与 Claude Code 的 Skill 入口都存在并指向同名公共工作流。
 5. Harness 检查验证这些路径仍在 `requiredPaths` 中。
@@ -45,7 +45,7 @@ Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AG
 |---|---|---|---|
 | Codex | `AGENTS.md`、`.agents/skills/` | 2026-07-20，按当前官方发现路径和生成 Smoke Test | 结构通过 |
 | Claude Code `2.1.205` | `CLAUDE.md` 导入 `AGENTS.md` | 2026-07-20，无工具非交互实测 | 正确识别 `AGENTS.md` 和仓库验证命令 |
-| Trae CN | `AGENTS.md` | 2026-07-20，桌面客户端人工实测 | 能读取项目规则 |
+| Trae CN | `.trae/rules/` 路由到 `AGENTS.md` | 2026-08-03，按官方项目规则发现路径与生成 Smoke Test | 结构通过；仍需客户端人工复测 |
 
 该矩阵是已验证快照，不是对未来版本的永久承诺。升级工具后应重新执行兼容性验收并更新日期与结果。
 
@@ -55,3 +55,4 @@ Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AG
 - [Codex: Agent Skills](https://learn.chatgpt.com/docs/agent-configuration/skills)
 - [Claude Code: How Claude remembers your project](https://code.claude.com/docs/en/memory)
 - [Claude Code: Extend Claude with skills](https://code.claude.com/docs/en/skills)
+- [Trae: Rules](https://docs.trae.ai/ide/rules)

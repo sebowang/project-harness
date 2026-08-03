@@ -4,6 +4,7 @@
   "files": [
     { "path": "AGENTS.md", "layer": "base", "ownership": "project" },
     { "path": "CLAUDE.md", "layer": "base", "ownership": "managed" },
+    { "path": ".trae/rules/project-harness.md", "layer": "base", "ownership": "managed" },
     { "path": "docs/harness-configuration.md", "layer": "base", "ownership": "managed" },
     { "path": "docs/project-map.md", "layer": "base", "ownership": "project" },
     { "path": "docs/verification.md", "layer": "base", "ownership": "project" },

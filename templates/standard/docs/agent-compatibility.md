@@ -4,7 +4,7 @@
 
 - Codex 自动读取 `AGENTS.md`。
 - Claude Code 通过根目录 `CLAUDE.md` 中的 `@AGENTS.md` 导入同一规则。
-- Trae 读取 `AGENTS.md`。
+- Trae 从 `.trae/rules/project-harness.md` 发现项目规则并路由到 `AGENTS.md`。
 
 `AGENTS.md` 是唯一规则事实源，不要在 `CLAUDE.md` 中复制正文。
 
@@ -18,7 +18,7 @@
 - `harness-authoring.md`
 - `project-handoff.md`
 
-Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/skills/` 自动发现入口。两个目录中的 Skill 都只引用上述公共流程。Trae 可根据 `AGENTS.md` 直接读取对应流程。
+Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/skills/` 自动发现入口。两个目录中的 Skill 都只引用上述公共流程。Trae 的 `.trae/rules/` 入口同样只负责路由，不复制规则正文。
 
 ## 运行确认
 
@@ -36,3 +36,4 @@ Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/
 - Codex Skills：https://learn.chatgpt.com/docs/agent-configuration/skills
 - Claude Code memory：https://code.claude.com/docs/en/memory
 - Claude Code skills：https://code.claude.com/docs/en/skills
+- Trae Rules：https://docs.trae.ai/ide/rules

@@ -10,9 +10,14 @@
                              "baselineHash":  "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
                          },
                          {
+                             "path":  ".trae/rules/project-harness.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "F30E71CCCC396CF53ADDF621CF11E8C4DD44B2B3B0B6BFDA4614ECF65356B80A"
+                         },
+                         {
                              "path":  "docs/harness-configuration.md",
                              "ownership":  "managed",
-                             "baselineHash":  ""
+                             "baselineHash":  null
                          },
                          {
                              "path":  "scripts/check-harness.ps1",
@@ -102,12 +107,12 @@
                          {
                              "path":  "docs/agent-compatibility.md",
                              "ownership":  "managed",
-                             "baselineHash":  ""
+                             "baselineHash":  null
                          },
                          {
                              "path":  "docs/capabilities.md",
                              "ownership":  "managed",
-                             "baselineHash":  "5E697262DC445CD379CE63CD99446294D5F7EA4C4F0E958AA98F62579F51FD59"
+                             "baselineHash":  "E90B4B92872D034217C90D4EBBD85EEDE20B2A01EC2F37400AAA6788DF10E287"
                          },
                          {
                              "path":  "docs/workflows/adversarial-review.md",

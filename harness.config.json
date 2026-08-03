@@ -28,6 +28,7 @@
                           ".claude/skills/project-handoff/SKILL.md",
                           ".claude/skills/project-start/SKILL.md",
                           ".claude/skills/project-onboarding/SKILL.md",
+                          ".trae/rules/project-harness.md",
                           "docs/agent-compatibility.md",
                           "docs/capabilities.md",
                           "docs/decisions/README.md",

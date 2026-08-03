@@ -98,6 +98,7 @@ AGENTS.md
 CLAUDE.md
 harness.config.json
 harness.lock.json
+.trae/rules/project-harness.md
 docs/
   harness-configuration.md
   project-map.md
@@ -129,7 +130,7 @@ tests/harness/README.md
 |---|---|---|
 | Codex | `AGENTS.md`、`.agents/skills/` | `docs/workflows/` |
 | Claude Code | `CLAUDE.md` 导入 `AGENTS.md`、`.claude/skills/` | `docs/workflows/` |
-| Trae | `AGENTS.md` | `docs/workflows/` |
+| Trae | `.trae/rules/project-harness.md` 路由到 `AGENTS.md` | `docs/workflows/` |
 
 各工具专属 Skill 只是薄入口，不复制完整规则。详细设计见 [Agent 兼容策略](docs/agent-compatibility.md)。
 
