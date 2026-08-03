@@ -157,7 +157,7 @@ try {
     $config.projectValidation = @(
         [pscustomobject]@{
             name = 'Smoke project command'
-            executable = 'powershell'
+            executable = [IO.Path]::GetFileNameWithoutExtension($powerShellExecutable)
             arguments = @('-NoProfile', '-Command', "Write-Output 'Project validation passed.'")
         }
     )
