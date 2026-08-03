@@ -33,7 +33,7 @@ Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AG
 
 1. `AGENTS.md` 和 `CLAUDE.md` 同时生成。
 2. `CLAUDE.md` 包含 `@AGENTS.md`，Trae 规则入口指向 `AGENTS.md` 和 `docs/workflows/`。
-3. 六个公共工作流存在。
+3. 九个公共工作流存在。
 4. Codex 与 Claude Code 的 Skill 入口都存在并指向同名公共工作流。
 5. Harness 检查验证这些路径仍在 `requiredPaths` 中。
 

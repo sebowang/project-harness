@@ -17,6 +17,9 @@
 - `adversarial-review.md`
 - `harness-authoring.md`
 - `project-handoff.md`
+- `testing.md`
+- `systematic-debugging.md`
+- `durable-plan.md`
 
 Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/skills/` 自动发现入口。两个目录中的 Skill 都只引用上述公共流程。Trae 的 `.trae/rules/` 入口同样只负责路由，不复制规则正文。
 

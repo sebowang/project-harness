@@ -54,6 +54,9 @@ Standard 模式提供：
 - `docs/workflows/adversarial-review.md`
 - `docs/workflows/harness-authoring.md`
 - `docs/workflows/project-handoff.md`
+- `docs/workflows/testing.md`
+- `docs/workflows/systematic-debugging.md`
+- `docs/workflows/durable-plan.md`（仅确认启用 `durable-plan` 后使用）
 
 当工具不能自动发现 Skill 时，直接读取并执行对应工作流。
 

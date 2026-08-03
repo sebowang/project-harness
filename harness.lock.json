@@ -75,6 +75,21 @@
                              "baselineHash":  "20C4EBD0329F6167CAD2560EA86493D43C6933190B5A45010363ADCF4BEFAF7D"
                          },
                          {
+                             "path":  ".agents/skills/testing/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "868466013C8E75AF49E10E029CB0215126A216F6D3535EFBCEA97F03F0A4A749"
+                         },
+                         {
+                             "path":  ".agents/skills/systematic-debugging/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "2F85C20D563FF29DE0238DA3A30D0E16BBD53687F22EAD3C633BDC036123BD0A"
+                         },
+                         {
+                             "path":  ".agents/skills/durable-plan/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "6956C668C0A3A235A6938A34E9D1F819737990F6DC744FF91D2B76A2C3827732"
+                         },
+                         {
                              "path":  ".claude/skills/adversarial-review/SKILL.md",
                              "ownership":  "managed",
                              "baselineHash":  "5F7F9E3657687AB7C9507B2C0521F26A85F69F62E40411FA7334976D8E546124"
@@ -105,6 +120,21 @@
                              "baselineHash":  "20C4EBD0329F6167CAD2560EA86493D43C6933190B5A45010363ADCF4BEFAF7D"
                          },
                          {
+                             "path":  ".claude/skills/testing/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "868466013C8E75AF49E10E029CB0215126A216F6D3535EFBCEA97F03F0A4A749"
+                         },
+                         {
+                             "path":  ".claude/skills/systematic-debugging/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "2F85C20D563FF29DE0238DA3A30D0E16BBD53687F22EAD3C633BDC036123BD0A"
+                         },
+                         {
+                             "path":  ".claude/skills/durable-plan/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "6956C668C0A3A235A6938A34E9D1F819737990F6DC744FF91D2B76A2C3827732"
+                         },
+                         {
                              "path":  "docs/agent-compatibility.md",
                              "ownership":  "managed",
                              "baselineHash":  null
@@ -112,7 +142,7 @@
                          {
                              "path":  "docs/capabilities.md",
                              "ownership":  "managed",
-                             "baselineHash":  "E90B4B92872D034217C90D4EBBD85EEDE20B2A01EC2F37400AAA6788DF10E287"
+                             "baselineHash":  "B5B534E902CF7CC2D8141EA07714068D5DA235D21195B8C28FB44E237D6B3E9A"
                          },
                          {
                              "path":  "docs/workflows/adversarial-review.md",
@@ -143,6 +173,21 @@
                              "path":  "docs/workflows/project-onboarding.md",
                              "ownership":  "managed",
                              "baselineHash":  "149A0E99CEC9BBCA7FE2BECB28FD976CA6553AE578E18F542D3C6B69EC4B64D3"
+                         },
+                         {
+                             "path":  "docs/workflows/testing.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "EB02A79E42006A4175539572211BC7BC1E19B5843AB26DE491D07A8358247F16"
+                         },
+                         {
+                             "path":  "docs/workflows/systematic-debugging.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "BDA00003CFD22166264AF930FD0976EA45DFC3FB492B2E71CAC3BF2BD45C327A"
+                         },
+                         {
+                             "path":  "docs/workflows/durable-plan.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "01B287AF576F17DEFFBF7532BC775BAF69CA697093A61FB11658A3ABFFB97328"
                          },
                          {
                              "path":  "scripts/check-doc-drift.ps1",

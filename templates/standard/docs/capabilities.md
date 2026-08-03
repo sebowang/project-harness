@@ -11,7 +11,7 @@ Standard 只提供能力入口，不默认启用额外状态、依赖或外部�
 | `database-risk` | 迁移、批量写入、恢复或生产数据 | 真实迁移前检查、备份/恢复演练和隔离环境证据 |
 | `deployment-risk` | 有发布环境、审批和回滚要求 | CI/CD 检查、审批边界、发布记录和可验证回滚路径 |
 
-`harness.config.json` 的 `capabilities` 是项目选择的标识数组，例如：
+`harness.config.json` 的 `capabilities` 是项目选择的标识数组。确认启用 `durable-plan` 后，使用 `docs/workflows/durable-plan.md` 维护唯一的 `docs/active-plan.md`；未启用时不创建它。例如：
 
 ```json
 {

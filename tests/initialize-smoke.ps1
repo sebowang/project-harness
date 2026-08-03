@@ -76,7 +76,7 @@ try {
         throw 'Trae project rule does not route to AGENTS.md and public workflows.'
     }
 
-    $workflowNames = @('project-start', 'project-onboarding', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff')
+    $workflowNames = @('project-start', 'project-onboarding', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff', 'testing', 'systematic-debugging', 'durable-plan')
     foreach ($workflowName in $workflowNames) {
         $workflowPath = Join-Path $testRoot "docs\workflows\$workflowName.md"
         $codexSkillPath = Join-Path $testRoot ".agents\skills\$workflowName\SKILL.md"
