@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "harnessVersion": "1.0.4",
+  "harnessVersion": "1.1.0",
   "files": [
     { "path": "AGENTS.md", "layer": "base", "ownership": "project" },
     { "path": "CLAUDE.md", "layer": "base", "ownership": "managed" },
@@ -33,6 +33,7 @@
     { "path": ".claude/skills/systematic-debugging/SKILL.md", "layer": "standard", "ownership": "managed" },
     { "path": ".claude/skills/durable-plan/SKILL.md", "layer": "standard", "ownership": "managed" },
     { "path": "docs/agent-compatibility.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/ci-platform-compatibility.md", "layer": "standard", "ownership": "managed" },
     { "path": "docs/capabilities.md", "layer": "standard", "ownership": "managed" },
     { "path": "docs/decisions/README.md", "layer": "standard", "ownership": "project" },
     { "path": "docs/prd/README.md", "layer": "standard", "ownership": "project" },

@@ -2,6 +2,17 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.1.0] - 2026-08-04
+
+### Added
+
+- GitLab CI 与 CNB（cnb.cool）参考示例，以及 CI 平台兼容性说明。
+- onboarding 只读识别 Git remote 和已有 CI 文件，并在 proposal 中提出平台建议。
+
+### Changed
+
+- CI 示例不会默认写入目标项目；统一验证入口仍由目标仓库的 `scripts/verify.ps1 -Scope All` 配置决定。
+
 ## [1.0.4] - 2026-08-03
 
 ### Fixed

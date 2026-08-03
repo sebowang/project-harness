@@ -49,6 +49,8 @@ Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AG
 
 该矩阵是已验证快照，不是对未来版本的永久承诺。升级工具后应重新执行兼容性验收并更新日期与结果。
 
+CI 平台接入边界见 `docs/ci-platform-compatibility.md`；它与 Agent 规则发现是两个独立问题。
+
 ## 参考
 
 - [Codex: Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)

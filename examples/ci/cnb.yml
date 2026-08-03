@@ -1,0 +1,7 @@
+# 将此片段合并到目标项目的 .cnb.yml。
+# 目标 CNB Runner 需要预装 pwsh。
+main:
+  push:
+    - stages:
+        - name: Harness validation
+          script: pwsh -NoProfile -File scripts/verify.ps1 -Scope All

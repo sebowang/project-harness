@@ -7,9 +7,10 @@
 ## Proposal
 
 1. 只读检查规则文件、Git 状态、源码入口、构建配置、测试、CI、模块文档和外部依赖。
+   读取 Git remote 时只记录脱敏后的 host；识别 GitHub Actions（`.github/workflows/`）、GitLab CI（`.gitlab-ci.yml`）、CNB（`.cnb.yml`）或未知平台，并只列出文件路径和可观察验证入口。
 2. 将结论分为“已验证事实”“推断”“未知项”，每项事实给出文件路径或命令证据。
 3. 提出对 `AGENTS.md`、`docs/project-map.md`、`docs/verification.md` 和 `harness.config.json` 的精确修改。
-4. 验证命令使用 `executable + arguments`；只提出仓库中已有证据支持的命令。
+4. 验证命令使用 `executable + arguments`；只提出仓库中已有证据支持的命令。已有 CI 只作为候选证据，不自动复制、迁移或执行其部署步骤。
 5. 单独列出数据库、部署、权限、生产数据和昂贵操作风险。可以建议能力，但不得替用户批准。
    可选能力说明见 `docs/capabilities.md`；小项目默认保持空数组。
 6. 展示 proposal、预计写入文件和仍需用户决定的问题，然后暂停。

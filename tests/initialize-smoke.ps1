@@ -133,6 +133,15 @@ try {
             $templateFilePaths += $relativePath
         }
     }
+
+    $onboardingWorkflow = Get-Content -LiteralPath (Join-Path $testRoot 'docs\workflows\project-onboarding.md') -Raw
+    if ($onboardingWorkflow -notmatch [regex]::Escape('.gitlab-ci.yml') -or $onboardingWorkflow -notmatch [regex]::Escape('.cnb.yml')) {
+        throw 'Project onboarding does not identify GitLab CI and CNB configuration files.'
+    }
+    $ciCompatibility = Get-Content -LiteralPath (Join-Path $testRoot 'docs\ci-platform-compatibility.md') -Raw
+    if ($ciCompatibility -notmatch 'GitLab CI' -or $ciCompatibility -notmatch 'CNB') {
+        throw 'Generated CI platform compatibility guidance is incomplete.'
+    }
     $manifest = Get-Content -LiteralPath (Join-Path $repositoryRoot 'templates\manifest.json') -Raw | ConvertFrom-Json
     $manifestPaths = @($manifest.files | ForEach-Object { [string]$_.path })
     $manifestDifferences = @(Compare-Object -ReferenceObject @($templateFilePaths | Sort-Object -Unique) -DifferenceObject @($manifestPaths | Sort-Object -Unique))

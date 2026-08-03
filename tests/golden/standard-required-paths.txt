@@ -21,6 +21,7 @@ AGENTS.md
 CLAUDE.md
 docs/agent-compatibility.md
 docs/capabilities.md
+docs/ci-platform-compatibility.md
 docs/decisions/README.md
 docs/harness-configuration.md
 docs/prd/README.md

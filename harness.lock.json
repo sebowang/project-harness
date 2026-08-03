@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.0.4",
+    "harnessVersion":  "1.1.0",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "managedFiles":  [
@@ -140,6 +140,11 @@
                              "baselineHash":  null
                          },
                          {
+                             "path":  "docs/ci-platform-compatibility.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "D605AFFD2223DA72E98C89BA0D4DEAF78DBBB2533BB15A21105BF79B2F72E03C"
+                         },
+                         {
                              "path":  "docs/capabilities.md",
                              "ownership":  "managed",
                              "baselineHash":  "B5B534E902CF7CC2D8141EA07714068D5DA235D21195B8C28FB44E237D6B3E9A"
@@ -172,7 +177,7 @@
                          {
                              "path":  "docs/workflows/project-onboarding.md",
                              "ownership":  "managed",
-                             "baselineHash":  "149A0E99CEC9BBCA7FE2BECB28FD976CA6553AE578E18F542D3C6B69EC4B64D3"
+                             "baselineHash":  "749F7897C16A8AD1B5E6102F032C330CE5684D8FA4EEDF6101DC1F4D14DF31A7"
                          },
                          {
                              "path":  "docs/workflows/testing.md",

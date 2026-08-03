@@ -33,6 +33,8 @@ Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/
 
 文件被发现只能证明兼容入口存在，不能替代真实任务验证或机械安全边界。
 
+CI 平台接入边界见 `docs/ci-platform-compatibility.md`；它与 Agent 规则发现是两个独立问题。
+
 ## 参考
 
 - Codex `AGENTS.md`：https://learn.chatgpt.com/docs/agent-configuration/agents-md

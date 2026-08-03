@@ -1,0 +1,9 @@
+stages:
+  - verify
+
+harness-verify:
+  stage: verify
+  tags:
+    - powershell
+  script:
+    - pwsh -NoProfile -File scripts/verify.ps1 -Scope All
