@@ -8,7 +8,9 @@ param(
 
     [string]$ProjectName,
 
-    [switch]$Force
+    [switch]$Force,
+
+    [switch]$Update
 )
 
 $ErrorActionPreference = 'Stop'
@@ -93,7 +95,31 @@ function Get-RepositorySignals {
     return $signals | Select-Object -Unique
 }
 
+function Get-TextHash {
+    param([Parameter(Mandatory = $true)][string]$Content)
+
+    $bytes = (New-Object Text.UTF8Encoding($false)).GetBytes($Content)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '')
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Write-Utf8NoBom {
+    param([Parameter(Mandatory = $true)][string]$Path, [Parameter(Mandatory = $true)][string]$Content)
+
+    [IO.File]::WriteAllText($Path, $Content, (New-Object Text.UTF8Encoding($false)))
+}
+
 $target = [IO.Path]::GetFullPath($TargetPath)
+if ($Update -and -not (Test-Path -LiteralPath $target -PathType Container)) {
+    throw 'Cannot update a missing target directory; run a fresh installation first.'
+}
+if ($Update -and ($Force -or $PSBoundParameters.ContainsKey('Profile') -or $PSBoundParameters.ContainsKey('ProjectName'))) {
+    throw '-Update uses profile and project name from harness.lock.json and cannot be combined with -Force, -Profile, or -ProjectName.'
+}
 if (-not (Test-Path -LiteralPath $target)) {
     if ($PSCmdlet.ShouldProcess($target, 'Create target directory')) {
         New-Item -ItemType Directory -Path $target -Force | Out-Null
@@ -111,6 +137,113 @@ $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 
 if ($manifest.schemaVersion -ne 1) {
     throw "Unsupported template manifest schemaVersion: $($manifest.schemaVersion)"
+}
+
+if ($Update) {
+    $lockPath = Join-Path $target 'harness.lock.json'
+    if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
+        throw 'Cannot update without harness.lock.json; run a fresh installation first.'
+    }
+    $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
+    if ($lock.schemaVersion -ne 1 -or [string]::IsNullOrWhiteSpace([string]$lock.profile)) {
+        throw 'Unsupported or incomplete harness.lock.json; run a fresh installation first.'
+    }
+    $manifestByPath = @{}
+    foreach ($manifestFile in @($manifest.files)) { $manifestByPath[[string]$manifestFile.path] = $manifestFile }
+    $lockByPath = @{}
+    foreach ($entry in @($lock.managedFiles)) { $lockByPath[[string]$entry.path] = $entry }
+    $selectedLayers = @('base')
+    if ([string]$lock.profile -eq 'Standard') { $selectedLayers += 'standard' }
+    elseif ([string]$lock.profile -ne 'Light') { throw "Unsupported lock profile: $($lock.profile)" }
+    $managedManifestPaths = @($manifest.files | Where-Object { $_.layer -in $selectedLayers -and $_.ownership -eq 'managed' } | ForEach-Object { [string]$_.path })
+    $changes = @()
+    $conflicts = @()
+    $nextManagedFiles = @()
+    foreach ($manifestFile in @($manifest.files | Where-Object { $_.layer -in $selectedLayers -and $_.ownership -eq 'managed' })) {
+        $relativePath = [string]$manifestFile.path
+        $entry = $lockByPath[$relativePath]
+        $manifestFile = $manifestByPath[$relativePath]
+        $sourcePath = Join-Path (Join-Path $templatesRoot ([string]$manifestFile.layer)) $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            $conflicts += "$relativePath (upstream template unavailable)"
+            continue
+        }
+        $content = ([IO.File]::ReadAllText($sourcePath)).Replace('{{PROJECT_NAME}}', [string]$lock.projectName)
+        $upstreamHash = Get-TextHash -Content $content
+        $destinationPath = Join-Path $target $relativePath
+        if ($null -eq $entry) {
+            if (Test-Path -LiteralPath $destinationPath) {
+                $conflicts += "$relativePath (new managed file collides with local path)"
+                continue
+            }
+            $changes += [pscustomobject]@{ Path = $relativePath; Destination = $destinationPath; Content = $content; Hash = $upstreamHash; NewFile = $true }
+            $nextManagedFiles += [ordered]@{ path = $relativePath; ownership = 'managed'; baselineHash = $upstreamHash }
+            continue
+        }
+        if (-not (Test-Path -LiteralPath $destinationPath -PathType Leaf)) {
+            $conflicts += "$relativePath (local file missing)"
+            continue
+        }
+        $localHash = (Get-FileHash -LiteralPath $destinationPath -Algorithm SHA256).Hash
+        $baseHash = [string]$entry.baselineHash
+        if ([string]::IsNullOrWhiteSpace($baseHash)) {
+            $conflicts += "$relativePath (missing lock baseline)"
+        } elseif ($localHash -ne $baseHash -and $upstreamHash -ne $baseHash) {
+            $conflicts += "$relativePath (local and upstream changes overlap)"
+        } elseif ($localHash -eq $baseHash -and $upstreamHash -ne $baseHash) {
+            $changes += [pscustomobject]@{ Path = $relativePath; Destination = $destinationPath; Content = $content; Hash = $upstreamHash; NewFile = $false }
+        }
+        $nextManagedFiles += [ordered]@{ path = $relativePath; ownership = 'managed'; baselineHash = if ($localHash -eq $baseHash) { $upstreamHash } else { $baseHash } }
+    }
+    foreach ($entry in @($lock.managedFiles)) {
+        if ([string]$entry.path -notin $managedManifestPaths) {
+            $conflicts += "$($entry.path) (managed file removed upstream)"
+        }
+    }
+    $lockMetadataChanged = ([string]$lock.harnessVersion -ne [string]$manifest.harnessVersion)
+    Write-Host "Update plan: $($changes.Count) file update(s), $($conflicts.Count) conflict(s)."
+    foreach ($change in $changes) { Write-Host "UPDATE   $($change.Path)" }
+    if ($lockMetadataChanged) { Write-Host "UPDATE   harness.lock.json ($($lock.harnessVersion) -> $($manifest.harnessVersion))" }
+    foreach ($conflict in $conflicts) { Write-Host "CONFLICT $conflict" -ForegroundColor Red }
+    if ($conflicts.Count -gt 0) { exit 1 }
+    if ($changes.Count -eq 0 -and -not $lockMetadataChanged) { Write-Host 'No managed file updates are required.'; exit 0 }
+    $backupRoot = Join-Path $target (Join-Path '.harness-backup' (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+    $written = New-Object System.Collections.Generic.List[object]
+    try {
+        if (-not $WhatIfPreference) {
+            New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+            Copy-Item -LiteralPath $lockPath -Destination (Join-Path $backupRoot 'harness.lock.json') -Force
+        }
+        foreach ($change in $changes) {
+            if ($PSCmdlet.ShouldProcess($change.Destination, 'Update managed Harness file')) {
+                $backupPath = Join-Path $backupRoot $change.Path
+                New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
+                if (-not $change.NewFile) { Copy-Item -LiteralPath $change.Destination -Destination $backupPath -Force }
+                New-Item -ItemType Directory -Path (Split-Path -Parent $change.Destination) -Force | Out-Null
+                $written.Add($change)
+                Write-Utf8NoBom -Path $change.Destination -Content $change.Content
+            }
+        }
+        if (-not $WhatIfPreference) {
+            $lock.managedFiles = @($nextManagedFiles)
+            $lock.harnessVersion = [string]$manifest.harnessVersion
+            $lock.profile = [string]$lock.profile
+            $lockTemp = "$lockPath.$([Guid]::NewGuid().ToString('N')).tmp"
+            Write-Utf8NoBom -Path $lockTemp -Content (($lock | ConvertTo-Json -Depth 8) + [Environment]::NewLine)
+            Move-Item -LiteralPath $lockTemp -Destination $lockPath -Force
+            Write-Host "Backup   $backupRoot"
+        }
+    } catch {
+        foreach ($change in $written) {
+            $backupPath = Join-Path $backupRoot $change.Path
+            if (Test-Path -LiteralPath $backupPath -PathType Leaf) { Copy-Item -LiteralPath $backupPath -Destination $change.Destination -Force }
+            elseif ($change.NewFile -and (Test-Path -LiteralPath $change.Destination)) { Remove-Item -LiteralPath $change.Destination -Force }
+        }
+        $lockBackupPath = Join-Path $backupRoot 'harness.lock.json'
+        if (Test-Path -LiteralPath $lockBackupPath -PathType Leaf) { Copy-Item -LiteralPath $lockBackupPath -Destination $lockPath -Force }
+        throw
+    }
+    exit 0
 }
 
 $selectedLayers = @('base')

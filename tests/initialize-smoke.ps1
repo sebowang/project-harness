@@ -5,6 +5,7 @@ $initializer = Join-Path $repositoryRoot 'scripts\initialize-project.ps1'
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-' + [Guid]::NewGuid().ToString('N'))
 $lightRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-light-' + [Guid]::NewGuid().ToString('N'))
 $whatIfRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-whatif-' + [Guid]::NewGuid().ToString('N'))
+$updateSourceRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-update-source-' + [Guid]::NewGuid().ToString('N'))
 $powerShellExecutable = if (Test-Path -LiteralPath (Join-Path $PSHOME 'powershell.exe')) {
     Join-Path $PSHOME 'powershell.exe'
 } elseif (Test-Path -LiteralPath (Join-Path $PSHOME 'pwsh.exe')) {
@@ -163,6 +164,57 @@ try {
         throw 'Doctor failed for a ready Harness.'
     }
 
+    New-Item -ItemType Directory -Path $updateSourceRoot -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'scripts') -Destination $updateSourceRoot -Recurse
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'templates') -Destination $updateSourceRoot -Recurse
+    $upstreamStatus = Join-Path $updateSourceRoot 'templates\base\scripts\harness-status.ps1'
+    Add-Content -LiteralPath $upstreamStatus -Value "`n# Upstream smoke update"
+    $targetStatus = Join-Path $testRoot 'scripts\harness-status.ps1'
+    $beforeDryRun = [IO.File]::ReadAllBytes($targetStatus)
+    $updateInitializer = Join-Path $updateSourceRoot 'scripts\initialize-project.ps1'
+    & $updateInitializer -TargetPath $testRoot -Update -WhatIf
+    if (-not $?) { throw 'Managed update dry-run failed.' }
+    if ([Convert]::ToBase64String($beforeDryRun) -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes($targetStatus))) {
+        throw 'Managed update dry-run changed a target file.'
+    }
+    & $updateInitializer -TargetPath $testRoot -Update
+    if (-not $?) { throw 'Managed update failed.' }
+    if ((Get-Content -LiteralPath $targetStatus -Raw) -notmatch 'Upstream smoke update') {
+        throw 'Managed update did not install upstream content.'
+    }
+    if (-not (Get-ChildItem -LiteralPath (Join-Path $testRoot '.harness-backup') -Recurse -Filter 'harness-status.ps1' -File | Select-Object -First 1)) {
+        throw 'Managed update did not create a backup.'
+    }
+
+    $updateManifestPath = Join-Path $updateSourceRoot 'templates\manifest.json'
+    $updateManifest = Get-Content -LiteralPath $updateManifestPath -Raw | ConvertFrom-Json
+    $updateManifest.harnessVersion = '0.2.1-test'
+    $updateManifest.files += [pscustomobject]@{ path = 'docs/new-managed.md'; layer = 'base'; ownership = 'managed' }
+    $updateManifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $updateManifestPath -Encoding UTF8
+    $newManagedSource = Join-Path $updateSourceRoot 'templates\base\docs\new-managed.md'
+    [IO.File]::WriteAllText($newManagedSource, "# New managed file`n", (New-Object Text.UTF8Encoding($false)))
+    & $updateInitializer -TargetPath $testRoot -Update
+    if (-not $?) { throw 'Update with a new managed file failed.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $testRoot 'docs\new-managed.md') -PathType Leaf)) {
+        throw 'Update did not install a new managed file.'
+    }
+    $updatedLock = Get-Content -LiteralPath (Join-Path $testRoot 'harness.lock.json') -Raw | ConvertFrom-Json
+    if ($updatedLock.harnessVersion -ne '0.2.1-test' -or 'docs/new-managed.md' -notin @($updatedLock.managedFiles.path)) {
+        throw 'Update did not record the new managed file and version in the lock.'
+    }
+
+    Add-Content -LiteralPath $targetStatus -Value "`n# Local conflicting update"
+    Add-Content -LiteralPath $upstreamStatus -Value "`n# Second upstream update"
+    $conflictBytes = [IO.File]::ReadAllBytes($targetStatus)
+    $lockBytes = [IO.File]::ReadAllBytes((Join-Path $testRoot 'harness.lock.json'))
+    Assert-ScriptFails -Path $updateInitializer -Arguments @('-TargetPath', $testRoot, '-Update')
+    if ([Convert]::ToBase64String($conflictBytes) -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes($targetStatus))) {
+        throw 'Conflicting update changed the local file.'
+    }
+    if ([Convert]::ToBase64String($lockBytes) -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $testRoot 'harness.lock.json')))) {
+        throw 'Conflicting update changed the lock file.'
+    }
+
     $validConfig = Get-Content -LiteralPath $configPath -Raw
     $brokenConfig = $validConfig | ConvertFrom-Json
     $brokenConfig.requiredPaths = 'AGENTS.md'
@@ -211,5 +263,8 @@ try {
     }
     if (Test-Path -LiteralPath $lightRoot) {
         Remove-Item -LiteralPath $lightRoot -Recurse -Force
+    }
+    if (Test-Path -LiteralPath $updateSourceRoot) {
+        Remove-Item -LiteralPath $updateSourceRoot -Recurse -Force
     }
 }

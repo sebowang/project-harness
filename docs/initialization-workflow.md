@@ -41,6 +41,28 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 
 `-Force` 会覆盖同名 Harness 文件，只应在确认差异后使用。
 
+## 持续维护
+
+目标仓库已存在 `harness.lock.json` 后，先预览再更新：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\repository" -Update -WhatIf
+
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\repository" -Update
+```
+
+`-Update` 使用 lock 中的 profile、项目名和 SHA-256 基线，不接受 `-Force` 作为冲突解决方式。更新遵循以下规则：
+
+- 上游变化且本地仍等于基线：自动更新。
+- 新的受管文件且目标路径不存在：自动创建。
+- 本地与上游都变化、受管文件缺失或路径碰撞：整次更新在写入前停止。
+- 项目所有文件和 `harness.config.json`：不自动覆盖。
+- 成功更新前备份受影响文件和原 lock；写入失败时尝试恢复到备份状态。
+
+配置 schema 需要迁移时，由对应版本提供显式迁移步骤；v1 不会借模板升级静默重写项目验证、豁免或漂移规则。
+
 ## 阶段四：填写项目事实
 
 至少完成：

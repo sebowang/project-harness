@@ -30,6 +30,20 @@ PowerShell 7 也可以使用：
 pwsh -File scripts/initialize-project.ps1 -TargetPath /path/to/repository -Profile Standard
 ```
 
+以后从本仓库拉取新版本后，用同一个初始化器安全维护目标仓库：
+
+```powershell
+# 先预览完整更新计划，不写文件
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\your-repository" -Update -WhatIf
+
+# 确认后执行
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\your-repository" -Update
+```
+
+更新只自动替换 lock 基线后未被项目修改的受管文件。双方修改同一路径、文件缺失或新增受管文件与本地路径碰撞时，整次更新会在写入前停止；成功更新前的文件和 lock 保存在 `.harness-backup/<timestamp>/`。
+
 初始化完成后，进入目标仓库执行：
 
 ```powershell
