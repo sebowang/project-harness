@@ -20,10 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install PowerShell
-        uses: PowerShell/PowerShell@v1
-        with:
-          powershell-version: '7.4.x'
+      - name: Show PowerShell version
+        run: pwsh --version
       - name: Check template neutrality
         shell: pwsh
         run: ./tests/check-template-neutrality.ps1
