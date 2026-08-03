@@ -16,7 +16,7 @@ git diff --check
 确认 `templates/manifest.json`、根目录 `harness.config.json` 和 `harness.lock.json` 版本一致后，创建 tag：
 
 ```powershell
-git tag -a v1.0.3 -m "Project Harness v1.0.3"
+git tag -a v1.0.4 -m "Project Harness v1.0.4"
 git push origin main --follow-tags
 ```
 

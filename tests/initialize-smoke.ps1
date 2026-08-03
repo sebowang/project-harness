@@ -357,3 +357,5 @@ try {
         Remove-Item -LiteralPath $updateSourceRoot -Recurse -Force
     }
 }
+
+exit 0

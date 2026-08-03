@@ -2,6 +2,12 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.0.4] - 2026-08-03
+
+### Fixed
+
+- Smoke Test 成功完成后显式返回退出码 `0`，避免 Linux PowerShell 将故意失败的负向断言遗留为整个测试的失败状态。
+
 ## [1.0.3] - 2026-08-03
 
 ### Fixed
