@@ -283,6 +283,7 @@ if ((-not (Test-Path -LiteralPath $configPath)) -or $Force) {
         requiredPaths = $requiredPaths
         projectValidation = @()
         driftChecks = @()
+        capabilities = @()
         readiness = [ordered]@{
             requireProjectValidation = ($Profile -eq 'Standard')
             projectValidationWaiver = $null

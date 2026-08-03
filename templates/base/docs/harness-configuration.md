@@ -15,6 +15,7 @@
 | `requiredPaths` | string array | 必须存在的 Harness 普通文件 |
 | `projectValidation` | object array | 真实项目验证命令 |
 | `driftChecks` | object array | 文档漂移断言 |
+| `capabilities` | string array | 已由项目确认启用的可选能力标识 |
 | `readiness` | object | 项目就绪条件和豁免 |
 
 ## 项目验证

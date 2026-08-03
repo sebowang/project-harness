@@ -26,6 +26,7 @@
     { "path": ".claude/skills/project-start/SKILL.md", "layer": "standard", "ownership": "managed" },
     { "path": ".claude/skills/project-onboarding/SKILL.md", "layer": "standard", "ownership": "managed" },
     { "path": "docs/agent-compatibility.md", "layer": "standard", "ownership": "managed" },
+    { "path": "docs/capabilities.md", "layer": "standard", "ownership": "managed" },
     { "path": "docs/decisions/README.md", "layer": "standard", "ownership": "project" },
     { "path": "docs/prd/README.md", "layer": "standard", "ownership": "project" },
     { "path": "docs/reference/README.md", "layer": "standard", "ownership": "project" },
