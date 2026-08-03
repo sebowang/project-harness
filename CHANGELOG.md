@@ -2,6 +2,13 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.1.2] - 2026-08-04
+
+### Changed
+
+- 为 testing、change-plan 和 adversarial-review 工作流补充可执行的验证分级、行为验收、范围扩张和依赖影响要求。
+- 中立性检查说明改为准确描述绝对本地路径检查与人工领域中立复核的边界。
+
 ## [1.1.1] - 2026-08-04
 
 ### Fixed

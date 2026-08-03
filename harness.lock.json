@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.1.1",
+    "harnessVersion":  "1.1.2",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "managedFiles":  [
@@ -152,12 +152,12 @@
                          {
                              "path":  "docs/workflows/adversarial-review.md",
                              "ownership":  "managed",
-                             "baselineHash":  "2AB21BD93E409B8BFA7BD8FEB705FACFAEA112FAE74C2D9E8E9936647AD5EDF4"
+                             "baselineHash":  "34FB0440E052042545BC1DBC2639076CC4D462D3E3790F96011C58F45A7FF549"
                          },
                          {
                              "path":  "docs/workflows/change-plan.md",
                              "ownership":  "managed",
-                             "baselineHash":  "FE7FFBF9AD5D9F72965D8D5F7EAF1A3D2668CCCD073A53BAE17704841B028D34"
+                             "baselineHash":  "C55827049C9A441F4CA15917F21285D96E26E528026291EA4317301257904EA7"
                          },
                          {
                              "path":  "docs/workflows/harness-authoring.md",
@@ -182,7 +182,7 @@
                          {
                              "path":  "docs/workflows/testing.md",
                              "ownership":  "managed",
-                             "baselineHash":  "EB02A79E42006A4175539572211BC7BC1E19B5843AB26DE491D07A8358247F16"
+                             "baselineHash":  "C9ADDBB87BB224156240B95C9D14A86A2BB1DA194D9EB44386BC992C9A4DAA61"
                          },
                          {
                              "path":  "docs/workflows/systematic-debugging.md",

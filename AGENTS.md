@@ -31,7 +31,7 @@ powershell -ExecutionPolicy Bypass -File tests/initialize-smoke.ps1
 powershell -ExecutionPolicy Bypass -File tests/check-template-neutrality.ps1
 ```
 
-第二个命令检查发布表面不包含已知私有项目名称或绝对用户路径。
+第二个命令检查发布表面不包含绝对本地路径；私有代码、名称和业务约定仍须在代码审查中按领域中立原则人工复核。
 
 ## 文档
 

@@ -134,20 +134,32 @@ try {
         }
     }
 
-    $onboardingWorkflow = Get-Content -LiteralPath (Join-Path $testRoot 'docs\workflows\project-onboarding.md') -Raw
+    $onboardingWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\project-onboarding.md'))
     if ($onboardingWorkflow -notmatch [regex]::Escape('.gitlab-ci.yml') -or $onboardingWorkflow -notmatch [regex]::Escape('.cnb.yml')) {
         throw 'Project onboarding does not identify GitLab CI and CNB configuration files.'
     }
-    $ciCompatibility = Get-Content -LiteralPath (Join-Path $testRoot 'docs\ci-platform-compatibility.md') -Raw
+    $ciCompatibility = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\ci-platform-compatibility.md'))
     if ($ciCompatibility -notmatch 'GitLab CI' -or $ciCompatibility -notmatch 'CNB') {
         throw 'Generated CI platform compatibility guidance is incomplete.'
     }
     if ($ciCompatibility -notmatch [regex]::Escape('examples/ci/') -or $ciCompatibility -notmatch [regex]::Escape('templates/manifest.json')) {
         throw 'Generated CI guidance does not explain that examples are outside initializer management.'
     }
-    $verificationGuidance = Get-Content -LiteralPath (Join-Path $testRoot 'docs\verification.md') -Raw
+    $verificationGuidance = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\verification.md'))
     if ($verificationGuidance -notmatch [regex]::Escape('harness-status.ps1') -or $verificationGuidance -notmatch [regex]::Escape('harness.lock.json')) {
         throw 'Generated verification guidance does not distinguish managed-file status from verification.'
+    }
+    $testingWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\testing.md'))
+    if ($testingWorkflow -notmatch [regex]::Escape('docs/verification.md') -or $testingWorkflow -notmatch 'schema' -or $testingWorkflow -notmatch [regex]::Escape('dry-run/preview')) {
+        throw 'Generated testing workflow does not enforce risk-based verification escalation.'
+    }
+    $reviewWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\adversarial-review.md'))
+    if ($reviewWorkflow -notmatch 'lock') {
+        throw 'Generated adversarial review does not cover dependency impact.'
+    }
+    $changePlanWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\change-plan.md'))
+    if ($changePlanWorkflow -notmatch [regex]::Escape('expected output') -or $changePlanWorkflow -notmatch [regex]::Escape('unacceptable behavior')) {
+        throw 'Generated change plan does not define observable behavior and scope expansion.'
     }
     $manifest = Get-Content -LiteralPath (Join-Path $repositoryRoot 'templates\manifest.json') -Raw | ConvertFrom-Json
     $manifestPaths = @($manifest.files | ForEach-Object { [string]$_.path })
