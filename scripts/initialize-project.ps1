@@ -41,7 +41,7 @@ function Install-TemplateLayer {
         throw "Template layer not found: $LayerPath"
     }
 
-    foreach ($sourceFile in Get-ChildItem -LiteralPath $LayerPath -Recurse -File) {
+    foreach ($sourceFile in Get-ChildItem -LiteralPath $LayerPath -Recurse -File -Force) {
         $relativePath = Get-RelativePath -BasePath $LayerPath -ChildPath $sourceFile.FullName
         $destinationPath = Join-Path $DestinationRoot $relativePath
         $destinationDirectory = Split-Path -Parent $destinationPath

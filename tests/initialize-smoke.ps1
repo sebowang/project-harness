@@ -128,7 +128,7 @@ try {
     $templateFilePaths = @()
     foreach ($layerName in @('base', 'standard')) {
         $layerRoot = Join-Path $repositoryRoot "templates\$layerName"
-        foreach ($file in Get-ChildItem -LiteralPath $layerRoot -Recurse -File) {
+        foreach ($file in Get-ChildItem -LiteralPath $layerRoot -Recurse -File -Force) {
             $relativePath = $file.FullName.Substring($layerRoot.Length).TrimStart('\', '/').Replace('\', '/')
             $templateFilePaths += $relativePath
         }
