@@ -67,7 +67,7 @@ try {
         throw 'CLAUDE.md does not import AGENTS.md.'
     }
 
-    $workflowNames = @('project-start', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff')
+    $workflowNames = @('project-start', 'project-onboarding', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff')
     foreach ($workflowName in $workflowNames) {
         $workflowPath = Join-Path $testRoot "docs\workflows\$workflowName.md"
         $codexSkillPath = Join-Path $testRoot ".agents\skills\$workflowName\SKILL.md"

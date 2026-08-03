@@ -49,6 +49,7 @@ TODO(HARNESS)：Standard 模式下补充 PRD、ADR、Reference 与 Harness 的�
 Standard 模式提供：
 
 - `docs/workflows/project-start.md`
+- `docs/workflows/project-onboarding.md`
 - `docs/workflows/change-plan.md`
 - `docs/workflows/adversarial-review.md`
 - `docs/workflows/harness-authoring.md`

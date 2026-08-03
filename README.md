@@ -52,6 +52,12 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope Harness
 
 该命令证明 Harness 已安装且结构可读取，不代表项目已完成配置。初始化器会将新项目报告为 `installed`。
 
+也可以在目标仓库直接告诉 Agent：
+
+> 按 `project-onboarding` 工作流勘察并配置这个仓库；先给我 proposal，不要直接写入。
+
+Agent 会先只读勘察，列出证据、未知项、验证命令候选和风险能力建议。只有你明确确认 proposal 后，它才会修改项目拥有的文件并运行 doctor 与完整验证。
+
 然后完成两项人工工作：
 
 1. 根据真实源码填写 `docs/project-map.md`，不要保留推测性描述。
