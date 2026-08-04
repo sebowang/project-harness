@@ -10,8 +10,11 @@
 4. fixture 放在 `tests/harness/data/`，不嵌入生产数据或凭据。
 5. 能独立验证高价值行为、共享契约或重复性回归。
 
-新增脚本后，把命令加入 `harness.config.json` 或本 README 的“当前 Harness”章节。
+新增脚本后，把命令加入 `harness.config.json`。下方索引由 `scripts/update-artifact-catalog.ps1` 维护，不要手工编辑标记区块。
 
 ## 当前 Harness
 
-暂无。TODO(HARNESS)：只在发现真实、可重复的验收场景后补充。
+<!-- PROJECT-HARNESS:CATALOG:BEGIN -->
+### Harness checks
+No matching files.
+<!-- PROJECT-HARNESS:CATALOG:END -->

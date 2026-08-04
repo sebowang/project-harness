@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.1.2",
+    "harnessVersion":  "1.2.0",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "requiredPaths":  [
@@ -51,6 +51,10 @@
                           "docs/workflows/systematic-debugging.md",
                           "docs/workflows/durable-plan.md",
                           "scripts/check-doc-drift.ps1",
+                          "scripts/check-artifact-catalog.ps1",
+                          "scripts/update-artifact-catalog.ps1",
+                          "scripts/install-git-hooks.ps1",
+                          ".githooks/pre-commit",
                           "tests/harness/README.md"
                       ],
     "projectValidation":  [
@@ -69,6 +73,14 @@
     "driftChecks":  [
 
                     ],
+    "artifactCatalogs":  [
+                              {
+                                  "name":  "Harness checks",
+                                  "directory":  "tests/harness",
+                                  "include":  "*.ps1",
+                                  "indexPath":  "tests/harness/README.md"
+                              }
+                          ],
     "capabilities":  [
 
                      ],

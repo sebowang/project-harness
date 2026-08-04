@@ -16,6 +16,7 @@
 .claude/skills/project-start/SKILL.md
 .claude/skills/systematic-debugging/SKILL.md
 .claude/skills/testing/SKILL.md
+.githooks/pre-commit
 .trae/rules/project-harness.md
 AGENTS.md
 CLAUDE.md
@@ -39,10 +40,13 @@ docs/workflows/systematic-debugging.md
 docs/workflows/testing.md
 harness.config.json
 harness.lock.json
+scripts/check-artifact-catalog.ps1
 scripts/check-doc-drift.ps1
 scripts/check-harness.ps1
 scripts/check-readiness.ps1
 scripts/harness-doctor.ps1
 scripts/harness-status.ps1
+scripts/install-git-hooks.ps1
+scripts/update-artifact-catalog.ps1
 scripts/verify.ps1
 tests/harness/README.md

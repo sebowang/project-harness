@@ -37,9 +37,12 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 - 为 Claude Code 创建导入 `AGENTS.md` 的 `CLAUDE.md`。
 - Standard 模式为 Codex 与 Claude Code 创建指向公共工作流的 Skill 入口。
 - 生成 `harness.config.json`。
-- 不修改业务源码、依赖、数据库、部署脚本或 Git Hook。
+- Standard 为 `tests/harness/*.ps1` 配置 README 索引检查。
+- 不修改业务源码、依赖、数据库、部署脚本或 Git 配置；Git Hook 文件会随 Standard 安装，但只在显式运行安装器后启用。
 
-`-Force` 只覆盖 manifest 标记为 `managed` 的模板文件；`AGENTS.md`、项目地图、验证指南和 `harness.config.json` 等项目所有文件仍会保留。
+`-Force` 只覆盖 manifest 标记为 `managed` 的模板文件；执行前会备份已存在的受管文件并在 lock 中记录新基线。`AGENTS.md`、项目地图、验证指南和 `harness.config.json` 等项目所有文件仍会保留。建议先用 `-WhatIf` 查看迁移范围。
+
+已有 `AGENTS.md` 但需要接入 Harness 时，显式使用 `-MergeProjectRules`。初始化器只管理 `<!-- PROJECT-HARNESS:BEGIN -->` 与 `<!-- PROJECT-HARNESS:END -->` 包围的区块，区块以外仍完全属于目标项目；首次改写前会备份 `AGENTS.md`。若标记只有开始或结束一侧、或出现多个区块，初始化器会停止，避免猜测合并结果。
 
 ## 持续维护
 
@@ -75,7 +78,9 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 5. 运行 Harness 检查和项目验证。
 6. 分别在实际使用的 Agent 中确认规则入口已加载。
 
-初始化器完成文件写入后，项目处于 `installed` 状态。只有 `scripts/verify.ps1 -Scope All` 通过后，项目才处于 `ready`；使用项目验证豁免时应报告为 `ready with waiver`。
+新增或删除 `artifactCatalogs` 覆盖的文件后，运行 `scripts/update-artifact-catalog.ps1` 更新受管索引。需要提交前反馈时可显式运行 `scripts/install-git-hooks.ps1`；它不会覆盖已有的 `core.hooksPath`，也不能代替 CI 中的完整验证。
+
+初始化器完成文件写入后，项目处于 `installed` 状态。Standard 安装输出会明确提示 catalog Hook 尚未启用及安装命令；只有用户明确同意后才运行该命令。只有 `scripts/verify.ps1 -Scope All` 通过后，项目才处于 `ready`；使用项目验证豁免时应报告为 `ready with waiver`。
 
 `Standard` 默认要求真实项目验证命令。项目确实不存在可执行验证时，在 `harness.config.json` 的 `readiness.projectValidationWaiver` 中记录具体原因，不得使用空字符串或笼统的“暂不需要”。
 

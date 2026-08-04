@@ -93,6 +93,41 @@ foreach ($relativePath in $config.requiredPaths) {
     }
 }
 
+$artifactCatalogProperty = $config.PSObject.Properties['artifactCatalogs']
+if ($null -ne $artifactCatalogProperty -and $artifactCatalogProperty.Value -isnot [System.Array]) {
+    $errors.Add('Configuration property must be an array: artifactCatalogs')
+}
+
+$agentsPath = Get-CheckedRepositoryPath -RelativePath 'AGENTS.md'
+if ($null -ne $agentsPath -and (Test-Path -LiteralPath $agentsPath -PathType Leaf)) {
+    $agentsContent = Get-Content -LiteralPath $agentsPath -Raw
+    $agentsBeginCount = ([regex]::Matches($agentsContent, '<!-- PROJECT-HARNESS:BEGIN -->')).Count
+    $agentsEndCount = ([regex]::Matches($agentsContent, '<!-- PROJECT-HARNESS:END -->')).Count
+    if ($agentsBeginCount -ne 1 -or $agentsEndCount -ne 1) {
+        $errors.Add('AGENTS.md is not connected to Project Harness rules; rerun initialize-project.ps1 with -MergeProjectRules')
+    }
+}
+
+$claudePath = Get-CheckedRepositoryPath -RelativePath 'CLAUDE.md'
+if ($null -ne $claudePath -and (Test-Path -LiteralPath $claudePath -PathType Leaf)) {
+    $claudeItem = Get-Item -LiteralPath $claudePath -Force
+    $claudeContent = Get-Content -LiteralPath $claudePath -Raw
+    $isImportFile = $claudeContent.Trim() -eq '@AGENTS.md'
+    $isAgentLink = ($claudeItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -and
+        $claudeContent -eq (Get-Content -LiteralPath (Join-Path $repositoryRoot 'AGENTS.md') -Raw)
+    if (-not $isImportFile -and -not $isAgentLink) {
+        $errors.Add('CLAUDE.md must contain only @AGENTS.md or link to AGENTS.md so AGENTS.md remains the single rule source')
+    }
+}
+
+$traePath = Get-CheckedRepositoryPath -RelativePath '.trae/rules/project-harness.md'
+if ($null -ne $traePath -and (Test-Path -LiteralPath $traePath -PathType Leaf)) {
+    $traeContent = Get-Content -LiteralPath $traePath -Raw
+    if ($traeContent -notmatch 'AGENTS\.md' -or $traeContent -notmatch 'docs/workflows/') {
+        $errors.Add('.trae/rules/project-harness.md must route to AGENTS.md and docs/workflows/')
+    }
+}
+
 foreach ($check in @($config.projectValidation)) {
     if ([string]::IsNullOrWhiteSpace([string]$check.name)) {
         $errors.Add('Project validation entry is missing name')
@@ -118,6 +153,26 @@ foreach ($check in @($config.driftChecks)) {
         [void][regex]::new([string]$check.pattern)
     } catch {
         $errors.Add("Drift check pattern is invalid: $($check.description)")
+    }
+}
+
+foreach ($catalog in @($(if ($null -ne $artifactCatalogProperty) { $artifactCatalogProperty.Value }))) {
+    foreach ($propertyName in @('name', 'directory', 'include', 'indexPath')) {
+        if ([string]::IsNullOrWhiteSpace([string]$catalog.$propertyName)) {
+            $errors.Add("Artifact catalog is missing $propertyName")
+        }
+    }
+
+    $include = [string]$catalog.include
+    if ($include.IndexOfAny(@([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)) -ge 0) {
+        $errors.Add("Artifact catalog include must be a file-name pattern: $include")
+    }
+
+    foreach ($pathProperty in @('directory', 'indexPath')) {
+        $relativePath = [string]$catalog.$pathProperty
+        if (-not [string]::IsNullOrWhiteSpace($relativePath) -and $null -eq (Get-CheckedRepositoryPath -RelativePath $relativePath)) {
+            $errors.Add("Artifact catalog $pathProperty escapes the repository: $relativePath")
+        }
     }
 }
 

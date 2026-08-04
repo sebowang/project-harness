@@ -5,6 +5,7 @@ $initializer = Join-Path $repositoryRoot 'scripts\initialize-project.ps1'
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-' + [Guid]::NewGuid().ToString('N'))
 $lightRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-light-' + [Guid]::NewGuid().ToString('N'))
 $whatIfRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-whatif-' + [Guid]::NewGuid().ToString('N'))
+$migrationRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-migration-' + [Guid]::NewGuid().ToString('N'))
 $updateSourceRoot = Join-Path ([IO.Path]::GetTempPath()) ('project-harness-update-source-' + [Guid]::NewGuid().ToString('N'))
 $powerShellExecutable = if (Test-Path -LiteralPath (Join-Path $PSHOME 'powershell.exe')) {
     Join-Path $PSHOME 'powershell.exe'
@@ -34,7 +35,13 @@ try {
     New-Item -ItemType Directory -Path (Split-Path -Parent $existingManaged) -Force | Out-Null
     [IO.File]::WriteAllText($existingManaged, "# Existing managed-path content`n", (New-Object Text.UTF8Encoding($false)))
 
-    & $initializer -TargetPath $testRoot -Profile Standard -ProjectName 'Smoke Test Project'
+    $initializationOutput = (& $initializer -TargetPath $testRoot -Profile Standard -ProjectName 'Smoke Test Project' -MergeProjectRules 6>&1 | Out-String)
+    if (-not $?) {
+        throw 'Standard initialization failed.'
+    }
+    if ($initializationOutput -notmatch [regex]::Escape('scripts/install-git-hooks.ps1')) {
+        throw 'Standard initialization did not disclose the optional Git Hook command.'
+    }
 
     $expectedPaths = @(
         'AGENTS.md',
@@ -52,7 +59,11 @@ try {
         'scripts\check-readiness.ps1',
         'scripts\harness-status.ps1',
         'scripts\harness-doctor.ps1',
+        'scripts\check-artifact-catalog.ps1',
+        'scripts\update-artifact-catalog.ps1',
+        'scripts\install-git-hooks.ps1',
         'scripts\verify.ps1',
+        '.githooks\pre-commit',
         'tests\harness\README.md'
     )
 
@@ -62,8 +73,9 @@ try {
         }
     }
 
-    if ([IO.File]::ReadAllText($existingAgents) -ne "# Existing rules`r`n") {
-        throw 'Existing AGENTS.md was overwritten without -Force.'
+    $mergedExistingAgents = [IO.File]::ReadAllText($existingAgents)
+    if ($mergedExistingAgents -notmatch [regex]::Escape('# Existing rules') -or $mergedExistingAgents -notmatch '<!-- PROJECT-HARNESS:BEGIN -->') {
+        throw 'Existing AGENTS.md was not preserved and connected through the Harness block.'
     }
 
     $claudeEntry = [IO.File]::ReadAllText((Join-Path $testRoot 'CLAUDE.md')).Trim()
@@ -105,6 +117,70 @@ try {
         throw 'Generated harness verification failed.'
     }
 
+    $catalogCheck = Join-Path $testRoot 'scripts\check-artifact-catalog.ps1'
+    $catalogUpdate = Join-Path $testRoot 'scripts\update-artifact-catalog.ps1'
+    $catalogIndex = Join-Path $testRoot 'tests\harness\README.md'
+    $catalogScript = Join-Path $testRoot 'tests\harness\sample-check.ps1'
+    [IO.File]::WriteAllText($catalogScript, "Write-Host 'sample'`n", (New-Object Text.UTF8Encoding($false)))
+    Assert-ScriptFails -Path $catalogCheck
+    & $catalogUpdate
+    if (-not $?) {
+        throw 'Artifact catalog update failed.'
+    }
+    & $catalogCheck
+    if (-not $?) {
+        throw 'Updated artifact catalog did not pass verification.'
+    }
+    $catalogBytes = [IO.File]::ReadAllBytes($catalogIndex)
+    & $catalogUpdate
+    if ([Convert]::ToBase64String($catalogBytes) -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes($catalogIndex))) {
+        throw 'Repeated artifact catalog generation was not byte-identical.'
+    }
+
+    $catalogContent = [IO.File]::ReadAllText($catalogIndex)
+    [IO.File]::WriteAllText($catalogIndex, $catalogContent.Replace('<!-- PROJECT-HARNESS:CATALOG:END -->', '<!-- BROKEN -->'), (New-Object Text.UTF8Encoding($false)))
+    Assert-ScriptFails -Path $catalogCheck
+    [IO.File]::WriteAllBytes($catalogIndex, $catalogBytes)
+
+    & git -C $testRoot init --quiet
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to initialize temporary Git repository for Hook checks.'
+    }
+    & git -C $testRoot add -- 'tests/harness/sample-check.ps1' 'tests/harness/README.md'
+    $catalogSecondScript = Join-Path $testRoot 'tests\harness\second-check.ps1'
+    [IO.File]::WriteAllText($catalogSecondScript, "Write-Host 'second'`n", (New-Object Text.UTF8Encoding($false)))
+    & git -C $testRoot add -- 'tests/harness/second-check.ps1'
+    Assert-ScriptFails -Path $catalogCheck -Arguments @('-Staged')
+    & $catalogUpdate
+    Assert-ScriptFails -Path $catalogCheck -Arguments @('-Staged')
+    & git -C $testRoot add -- 'tests/harness/README.md'
+    & $catalogCheck -Staged
+    if (-not $?) {
+        throw 'Staged artifact catalog check rejected a synchronized index.'
+    }
+
+    $hookInstaller = Join-Path $testRoot 'scripts\install-git-hooks.ps1'
+    & git -C $testRoot config --local core.hooksPath existing-hooks
+    Assert-ScriptFails -Path $hookInstaller
+    Assert-ScriptFails -Path $hookInstaller -Arguments @('-Uninstall')
+    & git -C $testRoot config --local --unset core.hooksPath
+    & $hookInstaller
+    if ((& git -C $testRoot config --local --get core.hooksPath) -ne '.githooks') {
+        throw 'Hook installer did not configure .githooks.'
+    }
+    & $hookInstaller -Uninstall
+    $hooksAfterUninstall = (& git -C $testRoot config --local --get core.hooksPath 2>$null)
+    if ($LASTEXITCODE -eq 0 -or -not [string]::IsNullOrWhiteSpace([string]$hooksAfterUninstall)) {
+        throw 'Hook uninstall did not remove the local Project Harness hooks path.'
+    }
+
+    Remove-Item -LiteralPath $catalogScript, $catalogSecondScript -Force
+    & $catalogUpdate
+    & $catalogCheck
+    if (-not $?) {
+        throw 'Artifact catalog did not return to a clean empty state.'
+    }
+
     & (Join-Path $testRoot 'scripts\harness-status.ps1')
     if (-not $?) {
         throw 'Clean Harness status failed.'
@@ -137,6 +213,9 @@ try {
     $onboardingWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\project-onboarding.md'))
     if ($onboardingWorkflow -notmatch [regex]::Escape('.gitlab-ci.yml') -or $onboardingWorkflow -notmatch [regex]::Escape('.cnb.yml')) {
         throw 'Project onboarding does not identify GitLab CI and CNB configuration files.'
+    }
+    if ($onboardingWorkflow -notmatch [regex]::Escape('scripts/install-git-hooks.ps1') -or $onboardingWorkflow -notmatch [regex]::Escape('core.hooksPath')) {
+        throw 'Project onboarding does not surface the optional Git Hook decision.'
     }
     $ciCompatibility = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\ci-platform-compatibility.md'))
     if ($ciCompatibility -notmatch 'GitLab CI' -or $ciCompatibility -notmatch 'CNB') {
@@ -235,7 +314,7 @@ try {
 
     $configBeforeForce = [IO.File]::ReadAllText($configPath)
     & $initializer -TargetPath $testRoot -Profile Standard -ProjectName 'Changed By Force' -Force
-    if ([IO.File]::ReadAllText($existingAgents) -ne "# Existing rules`r`n") {
+    if ([IO.File]::ReadAllText($existingAgents) -ne $mergedExistingAgents) {
         throw '-Force overwrote a project-owned AGENTS.md.'
     }
     if ([IO.File]::ReadAllText($configPath) -ne $configBeforeForce) {
@@ -345,6 +424,12 @@ try {
     Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-harness.ps1')
     [IO.File]::WriteAllText($configPath, $validConfig, (New-Object Text.UTF8Encoding($false)))
 
+    $catalogEscapeConfig = $validConfig | ConvertFrom-Json
+    $catalogEscapeConfig.artifactCatalogs[0].directory = '../outside'
+    $catalogEscapeConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-harness.ps1')
+    [IO.File]::WriteAllText($configPath, $validConfig, (New-Object Text.UTF8Encoding($false)))
+
     $readinessScript = Join-Path $testRoot 'scripts\check-readiness.ps1'
     $readinessBackup = Join-Path $testRoot 'scripts\check-readiness.ps1.bak'
     Move-Item -LiteralPath $readinessScript -Destination $readinessBackup
@@ -360,9 +445,60 @@ try {
     if ((Get-Content -LiteralPath (Join-Path $lightRoot 'CLAUDE.md') -Raw).Trim() -ne '@AGENTS.md') {
         throw 'Light profile did not create the Claude Code entrypoint.'
     }
+    $lightConfig = Get-Content -LiteralPath (Join-Path $lightRoot 'harness.config.json') -Raw | ConvertFrom-Json
+    if (@($lightConfig.artifactCatalogs).Count -ne 0 -or (Test-Path -LiteralPath (Join-Path $lightRoot 'scripts\check-artifact-catalog.ps1'))) {
+        throw 'Light profile unexpectedly enabled artifact catalogs.'
+    }
     & (Join-Path $lightRoot 'scripts\verify.ps1') -Scope Harness
     if (-not $?) {
         throw 'Light harness verification failed.'
+    }
+
+    New-Item -ItemType Directory -Path $migrationRoot -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $migrationRoot 'AGENTS.md'), "# Existing rules`n", (New-Object Text.UTF8Encoding($false)))
+    [IO.File]::WriteAllText((Join-Path $migrationRoot 'CLAUDE.md'), "# Legacy duplicated rules`n", (New-Object Text.UTF8Encoding($false)))
+    & $initializer -TargetPath $migrationRoot -Profile Light -ProjectName 'Migration Project'
+    & (Join-Path $migrationRoot 'scripts\check-harness.ps1')
+    if ($LASTEXITCODE -eq 0) {
+        throw 'Harness check accepted an invalid pre-existing CLAUDE.md entrypoint.'
+    }
+    & $initializer -TargetPath $migrationRoot -Profile Light -ProjectName 'Migration Project' -Force
+    if (-not $?) {
+        throw 'Explicit managed-file migration failed.'
+    }
+    if ((Get-Content -LiteralPath (Join-Path $migrationRoot 'CLAUDE.md') -Raw).Trim() -ne '@AGENTS.md') {
+        throw 'Managed-file migration did not repair CLAUDE.md.'
+    }
+    $migrationLock = Get-Content -LiteralPath (Join-Path $migrationRoot 'harness.lock.json') -Raw | ConvertFrom-Json
+    $migrationClaude = $migrationLock.managedFiles | Where-Object { $_.path -eq 'CLAUDE.md' } | Select-Object -First 1
+    if ([string]::IsNullOrWhiteSpace([string]$migrationClaude.baselineHash)) {
+        throw 'Managed-file migration did not establish a trusted CLAUDE.md baseline.'
+    }
+    if (-not (Get-ChildItem -LiteralPath (Join-Path $migrationRoot '.harness-backup') -Recurse -Filter 'CLAUDE.md' -File | Select-Object -First 1)) {
+        throw 'Managed-file migration did not back up the previous CLAUDE.md.'
+    }
+    & $initializer -TargetPath $migrationRoot -Profile Light -ProjectName 'Migration Project' -MergeProjectRules
+    if (-not $?) {
+        throw 'Explicit project-rules merge failed.'
+    }
+    $mergedAgents = Get-Content -LiteralPath (Join-Path $migrationRoot 'AGENTS.md') -Raw
+    if ($mergedAgents -notmatch [regex]::Escape('# Existing rules') -or $mergedAgents -notmatch '<!-- PROJECT-HARNESS:BEGIN -->') {
+        throw 'Project-rules merge did not preserve existing rules and append the Harness block.'
+    }
+    $mergedAgentsBytes = [IO.File]::ReadAllBytes((Join-Path $migrationRoot 'AGENTS.md'))
+    & $initializer -TargetPath $migrationRoot -Profile Light -ProjectName 'Migration Project' -MergeProjectRules
+    if (-not $?) {
+        throw 'Repeated project-rules merge failed.'
+    }
+    $remergedAgents = Get-Content -LiteralPath (Join-Path $migrationRoot 'AGENTS.md') -Raw
+    if (([regex]::Matches($remergedAgents, '<!-- PROJECT-HARNESS:BEGIN -->')).Count -ne 1) {
+        throw 'Repeated project-rules merge duplicated the Harness block.'
+    }
+    if ([Convert]::ToBase64String($mergedAgentsBytes) -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $migrationRoot 'AGENTS.md')))) {
+        throw 'Repeated project-rules merge rewrote an already current AGENTS.md.'
+    }
+    if (-not (Get-ChildItem -LiteralPath (Join-Path $migrationRoot '.harness-backup') -Recurse -Filter 'AGENTS.md' -File | Select-Object -First 1)) {
+        throw 'Project-rules merge did not back up the previous AGENTS.md.'
     }
 
     & $initializer -TargetPath $whatIfRoot -Profile Standard -ProjectName 'WhatIf Project' -WhatIf
@@ -383,6 +519,9 @@ try {
     }
     if (Test-Path -LiteralPath $updateSourceRoot) {
         Remove-Item -LiteralPath $updateSourceRoot -Recurse -Force
+    }
+    if (Test-Path -LiteralPath $migrationRoot) {
+        Remove-Item -LiteralPath $migrationRoot -Recurse -Force
     }
 }
 

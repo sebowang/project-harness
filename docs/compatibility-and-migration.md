@@ -12,12 +12,25 @@
 ## 从 0.x 迁移
 
 1. 备份目标仓库并确认 `git status --short`。
-2. 用 v1 初始化器执行一次首次安装；已有文件默认 `SKIP`，不要使用 `-Force` 解决差异。
-3. 检查生成的 `harness.config.json`，补充真实项目验证命令和已确认能力。
-4. 运行 `scripts/verify.ps1 -Scope Harness`，再按 onboarding 工作流补齐事实。
-5. 以后升级先运行 `-Update -WhatIf`。冲突时处理目标仓库的本地修改后再重试。
+2. 用 v1 初始化器执行 `-WhatIf`；已有文件默认 `SKIP`，先区分项目所有文件和受管入口冲突。
+3. 如果受管入口与模板冲突，确认迁移范围后使用 `-Force`。它只覆盖 manifest 标记为 `managed` 的文件，先把旧文件备份到 `.harness-backup/<timestamp>/`，并刷新这些文件的 lock 基线；项目所有文件仍不会覆盖。
+4. 若已有 `AGENTS.md` 需要保留并接入 Harness，使用 `-MergeProjectRules`；它只更新带 `PROJECT-HARNESS` 标记的受控区块，并备份原文件。
+5. 检查生成的 `harness.config.json`，补充真实项目验证命令和已确认能力。
+6. 运行 `scripts/verify.ps1 -Scope Harness`，再按 onboarding 工作流补齐事实。
+7. 以后升级先运行 `-Update -WhatIf`。冲突时处理目标仓库的本地修改后再重试。
 
 没有 lock 的旧安装不能安全推断基线，因此 v1 不会自动升级它；重新安装只创建缺失文件，项目文件仍由用户决定。
+
+## 从 1.1.x 启用 artifact catalog
+
+`-Update` 可以安装 1.2.0 新增的受管脚本和 `.githooks/pre-commit`，但不会改写项目拥有的 `harness.config.json` 与 `tests/harness/README.md`。需要启用目录索引时：
+
+1. 在 `harness.config.json` 增加 `artifactCatalogs` 数组。
+2. 在对应 `indexPath` 增加唯一的 `PROJECT-HARNESS:CATALOG:BEGIN/END` 标记区块。
+3. 运行 `scripts/update-artifact-catalog.ps1`，再运行 `scripts/verify.ps1 -Scope Harness`。
+4. 需要本地提交前反馈时，显式运行 `scripts/install-git-hooks.ps1`；已有其他 `core.hooksPath` 时先人工决定如何整合。
+
+未增加 `artifactCatalogs` 的旧项目会跳过该检查，不会因小版本更新直接失效。
 
 ## 兼容承诺
 

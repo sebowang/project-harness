@@ -2,6 +2,29 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.2.0] - 2026-08-04
+
+### Added
+
+- Standard 支持配置驱动的 artifact catalog，为 `tests/harness/*.ps1` 生成稳定的 README 受管索引，并在统一验证中检查漂移。
+- 增加显式、可撤销的本地 pre-commit hook 安装器；不自动改 Git 配置，不覆盖已有 Hook，也不自动修改或暂存文件。
+
+### Changed
+
+- `verify.ps1 -Scope Harness/All` 会运行已配置的 artifact catalog 检查，CI 可直接复用同一入口。
+
+## [1.1.3] - 2026-08-04
+
+### Fixed
+
+- 已有受管文件与模板一致时初始化会建立可信 lock 基线。
+- 显式 `-Force` 迁移受管文件前会备份旧文件，并刷新迁移后的基线。
+- Harness 结构检查现在验证 `CLAUDE.md` 和 Trae 规则入口确实路由到公共事实源。
+
+### Added
+
+- `-MergeProjectRules` 可将 Harness 受控区块合并到已有 `AGENTS.md`，保留项目专属规则、备份原文件，并支持重复执行收敛。
+
 ## [1.1.2] - 2026-08-04
 
 ### Changed

@@ -1,25 +1,25 @@
 # Harness 配置
 
-`harness.config.json` 保存目标项目确认后的 Harness 配置。初始化器创建初始配置；项目可以补充验证命令、漂移断言和 readiness 豁免，但不得删除未知字段后假定旧工具仍兼容。
+`harness.config.json` 保存本项目确认后的 Harness 配置。
 
-`harness.lock.json` 是 Harness 管理的安装基线，记录版本和受管文件的 SHA-256。不要手工修改它来掩盖文件变化；后续 `status` 和 `update` 会使用它判断是否可以安全更新。
+`harness.lock.json` 保存安装版本和受管文件基线，供只读 `harness-status.ps1` 和后续安全更新使用。
 
-## 顶层字段
+## 字段
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `schemaVersion` | number | 配置结构版本；当前只支持 `1` |
 | `harnessVersion` | string | 创建或最近迁移该配置的 Harness 版本 |
 | `profile` | `Light` 或 `Standard` | 初始化级别 |
-| `projectName` | string | 目标项目显示名称 |
-| `requiredPaths` | string array | Harness 必需文件；当前条目都必须是普通文件 |
+| `projectName` | string | 项目显示名称 |
+| `requiredPaths` | string array | 必须存在的 Harness 普通文件 |
 | `projectValidation` | object array | 真实项目验证命令 |
-| `driftChecks` | object array | 项目定义的文档漂移断言 |
+| `driftChecks` | object array | 文档漂移断言 |
+| `artifactCatalogs` | object array | 由目录内容生成并校验的 README 索引 |
+| `capabilities` | string array | 已由项目确认启用的可选能力标识 |
 | `readiness` | object | 项目就绪条件和豁免 |
 
 ## 项目验证
-
-每个 `projectValidation` 条目使用结构化命令：
 
 ```json
 {
@@ -29,30 +29,38 @@
 }
 ```
 
-`executable` 必须是可发现的程序，`arguments` 是字符串数组。不要把完整命令行作为单个字符串，也不要依赖 `Invoke-Expression`。
+使用 `executable + arguments`，不要配置交给 `Invoke-Expression` 的完整命令字符串。
 
 ## Readiness
 
-```json
-{
-  "readiness": {
-    "requireProjectValidation": true,
-    "projectValidationWaiver": null
-  }
-}
-```
+`Standard` 默认设置 `readiness.requireProjectValidation` 为 `true`。确实没有可执行项目验证时，在 `projectValidationWaiver` 中记录具体原因；这会得到 `ready with waiver`，不代表项目验证已经通过。
 
-`Standard` 默认要求至少一个项目验证命令。项目确实没有可执行验证时，填写具体 `projectValidationWaiver`；完整检查会报告 `ready with waiver`。豁免不是验证通过，也不应用于仅仅尚未完成配置的项目。
+所有项目事实占位符清除后，运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
+```
 
 ## 文档漂移
 
+`driftChecks[].pattern` 是 .NET 正则表达式。每个条目还需要 `path`、`description` 和布尔值 `expectMatch`。
+
+## Artifact catalog
+
 ```json
 {
-  "description": "Documented entrypoint remains current",
-  "path": "docs/project-map.md",
-  "pattern": "src/main\\.ts",
-  "expectMatch": true
+  "name": "Harness checks",
+  "directory": "tests/harness",
+  "include": "*.ps1",
+  "indexPath": "tests/harness/README.md"
 }
 ```
 
-`pattern` 是 .NET 正则表达式，不是普通文本。`path` 必须指向目标仓库内的普通文件。
+`directory` 和 `indexPath` 必须位于仓库内，`include` 只能是文件名匹配模式。更新器按稳定顺序枚举目录的直接子文件，并只替换 README 中唯一的 `PROJECT-HARNESS:CATALOG` 标记区块：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/update-artifact-catalog.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check-artifact-catalog.ps1
+```
+
+若本项目从旧版 Standard 升级，项目拥有的 `harness.config.json` 和 `tests/harness/README.md` 不会被静默改写；应显式加入配置与标记区块后再启用检查。

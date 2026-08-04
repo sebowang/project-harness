@@ -10,6 +10,8 @@ param(
 
     [switch]$Force,
 
+    [switch]$MergeProjectRules,
+
     [switch]$Update,
 
     [switch]$Prune
@@ -34,7 +36,8 @@ function Install-TemplateLayer {
         [Parameter(Mandatory = $true)][string]$DestinationRoot,
         [Parameter(Mandatory = $true)][string]$ResolvedProjectName,
         [Parameter(Mandatory = $true)][bool]$Overwrite,
-        [string[]]$ProjectOwnedPaths = @()
+        [string[]]$ProjectOwnedPaths = @(),
+        [string]$HarnessRulesBlock = ''
     )
 
     if (-not (Test-Path -LiteralPath $LayerPath -PathType Container)) {
@@ -61,6 +64,9 @@ function Install-TemplateLayer {
             New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
             $content = [IO.File]::ReadAllText($sourceFile.FullName)
             $content = $content.Replace('{{PROJECT_NAME}}', $ResolvedProjectName)
+            if ($normalizedRelativePath -eq 'AGENTS.md') {
+                $content = $content.Replace('{{HARNESS_RULES_BLOCK}}', $HarnessRulesBlock)
+            }
             [IO.File]::WriteAllText($destinationPath, $content, (New-Object Text.UTF8Encoding($false)))
             Write-Host "WRITE  $relativePath"
         }
@@ -135,12 +141,45 @@ function Write-Utf8NoBom {
     [IO.File]::WriteAllText($Path, $Content, (New-Object Text.UTF8Encoding($false)))
 }
 
+function Merge-HarnessRulesBlock {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$RulesBlock
+    )
+
+    $begin = '<!-- PROJECT-HARNESS:BEGIN -->'
+    $end = '<!-- PROJECT-HARNESS:END -->'
+    $content = [IO.File]::ReadAllText($Path)
+    $beginCount = ([regex]::Matches($content, [regex]::Escape($begin))).Count
+    $endCount = ([regex]::Matches($content, [regex]::Escape($end))).Count
+    if ($beginCount -ne $endCount -or $beginCount -gt 1) {
+        throw "Cannot merge Harness rules into ${Path}: expected zero or one complete managed block."
+    }
+
+    $block = $RulesBlock.TrimEnd() + [Environment]::NewLine
+    if ($beginCount -eq 1) {
+        $pattern = '(?s)<!-- PROJECT-HARNESS:BEGIN -->.*?<!-- PROJECT-HARNESS:END -->\s*'
+        $managedMatch = [regex]::Match($content, $pattern)
+        $normalizedCurrentBlock = $managedMatch.Value.TrimEnd().Replace("`r`n", "`n")
+        $normalizedExpectedBlock = $block.TrimEnd().Replace("`r`n", "`n")
+        if ($normalizedCurrentBlock -eq $normalizedExpectedBlock) {
+            return $content
+        }
+        return [regex]::Replace($content, $pattern, $block)
+    }
+
+    return $content.TrimEnd() + [Environment]::NewLine + [Environment]::NewLine + $block
+}
+
 $target = [IO.Path]::GetFullPath($TargetPath)
 if ($Update -and -not (Test-Path -LiteralPath $target -PathType Container)) {
     throw 'Cannot update a missing target directory; run a fresh installation first.'
 }
 if ($Update -and ($Force -or $PSBoundParameters.ContainsKey('Profile') -or $PSBoundParameters.ContainsKey('ProjectName'))) {
     throw '-Update uses profile and project name from harness.lock.json and cannot be combined with -Force, -Profile, or -ProjectName.'
+}
+if ($Update -and $MergeProjectRules) {
+    throw '-MergeProjectRules is only supported during fresh installation; run it without -Update.'
 }
 if ($Prune -and -not $Update) {
     throw '-Prune is only valid together with -Update.'
@@ -159,6 +198,12 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $templatesRoot = Join-Path $repositoryRoot 'templates'
 $manifestPath = Join-Path $templatesRoot 'manifest.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+$harnessRulesPath = Join-Path $templatesRoot 'partials\agents-harness-block.md'
+$harnessRulesBlock = if (Test-Path -LiteralPath $harnessRulesPath -PathType Leaf) {
+    [IO.File]::ReadAllText($harnessRulesPath)
+} else {
+    throw "Harness rules partial not found: $harnessRulesPath"
+}
 
 if ($manifest.schemaVersion -ne 1) {
     throw "Unsupported template manifest schemaVersion: $($manifest.schemaVersion)"
@@ -337,15 +382,58 @@ foreach ($file in $selectedFiles) {
     $preExistingPaths[[string]$file.path] = Test-Path -LiteralPath $destinationPath -PathType Leaf
 }
 
+$forceBackupRoot = $null
+if ($Force) {
+    $existingManagedFiles = @($selectedFiles | Where-Object {
+        $_.ownership -eq 'managed' -and $preExistingPaths[[string]$_.path]
+    })
+    if ($existingManagedFiles.Count -gt 0) {
+        $forceBackupRoot = Join-Path $target ('.harness-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+        if ($WhatIfPreference) {
+            Write-Host "What if: backing up $($existingManagedFiles.Count) existing managed file(s) to $forceBackupRoot."
+        } elseif ($PSCmdlet.ShouldProcess($forceBackupRoot, 'Back up existing managed Harness files')) {
+            foreach ($file in $existingManagedFiles) {
+                $relativePath = ([string]$file.path).Replace('/', '\')
+                $sourcePath = Join-Path $target $relativePath
+                $backupPath = Join-Path $forceBackupRoot $relativePath
+                New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
+                Copy-Item -LiteralPath $sourcePath -Destination $backupPath -Force
+            }
+            Write-Host "BACKUP $forceBackupRoot"
+        }
+    }
+}
+
 Write-Host "Project Harness initialization"
 Write-Host "Target : $target"
 Write-Host "Profile: $Profile"
 Write-Host "Project: $ProjectName"
 
 $projectOwnedPaths = @($selectedFiles | Where-Object { $_.ownership -eq 'project' } | ForEach-Object { [string]$_.path })
-Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'base') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent -ProjectOwnedPaths $projectOwnedPaths
+Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'base') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent -ProjectOwnedPaths $projectOwnedPaths -HarnessRulesBlock $harnessRulesBlock
 if ($Profile -eq 'Standard') {
-    Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'standard') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent -ProjectOwnedPaths $projectOwnedPaths
+    Install-TemplateLayer -LayerPath (Join-Path $templatesRoot 'standard') -DestinationRoot $target -ResolvedProjectName $ProjectName -Overwrite $Force.IsPresent -ProjectOwnedPaths $projectOwnedPaths -HarnessRulesBlock $harnessRulesBlock
+}
+
+$agentsPath = Join-Path $target 'AGENTS.md'
+if ($MergeProjectRules -and (Test-Path -LiteralPath $agentsPath -PathType Leaf)) {
+    $mergedRules = Merge-HarnessRulesBlock -Path $agentsPath -RulesBlock $harnessRulesBlock
+    $currentRules = [IO.File]::ReadAllText($agentsPath)
+    if ($mergedRules -ne $currentRules) {
+        $mergeBackupRoot = Join-Path $target ('.harness-backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+        $mergeBackupPath = Join-Path $mergeBackupRoot 'AGENTS.md'
+        if ($WhatIfPreference) {
+            Write-Host "What if: merging Harness rules into AGENTS.md (backup: $mergeBackupPath)."
+        } elseif ($PSCmdlet.ShouldProcess($agentsPath, 'Merge Harness rules into project AGENTS.md')) {
+            New-Item -ItemType Directory -Path $mergeBackupRoot -Force | Out-Null
+            Copy-Item -LiteralPath $agentsPath -Destination $mergeBackupPath -Force
+            Write-Utf8NoBom -Path $agentsPath -Content $mergedRules
+            Write-Host 'MERGE  AGENTS.md (Harness rules block)'
+            Write-Host "BACKUP $mergeBackupRoot"
+        }
+    } else {
+        Write-Host 'SKIP   AGENTS.md (Harness rules block already up to date)'
+    }
 }
 
 $requiredPaths = @('harness.config.json', 'harness.lock.json') + @(
@@ -356,6 +444,15 @@ $requiredPaths = @('harness.config.json', 'harness.lock.json') + @(
 
 $configPath = Join-Path $target 'harness.config.json'
 if (-not (Test-Path -LiteralPath $configPath)) {
+    $artifactCatalogs = @()
+    if ($Profile -eq 'Standard') {
+        $artifactCatalogs += [ordered]@{
+            name = 'Harness checks'
+            directory = 'tests/harness'
+            include = '*.ps1'
+            indexPath = 'tests/harness/README.md'
+        }
+    }
     $config = [ordered]@{
         schemaVersion = 1
         harnessVersion = [string]$manifest.harnessVersion
@@ -364,6 +461,7 @@ if (-not (Test-Path -LiteralPath $configPath)) {
         requiredPaths = $requiredPaths
         projectValidation = @()
         driftChecks = @()
+        artifactCatalogs = $artifactCatalogs
         capabilities = @()
         readiness = [ordered]@{
             requireProjectValidation = ($Profile -eq 'Standard')
@@ -390,10 +488,15 @@ if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
         }
 
         $hash = Get-FileContentHash -Path $destinationPath
+        $templateLayer = [string]$file.layer
+        $templatePath = Join-Path (Join-Path $templatesRoot $templateLayer) ([string]$file.path)
+        $templateContent = [IO.File]::ReadAllText($templatePath)
+        $templateContent = $templateContent.Replace('{{PROJECT_NAME}}', $ProjectName)
+        $matchesTemplate = $hash -eq (Get-TextHash -Content $templateContent)
         $managedFiles += [ordered]@{
             path = $relativePath
             ownership = 'managed'
-            baselineHash = if ($preExistingPaths[$relativePath]) { $null } else { $hash }
+            baselineHash = if (-not $preExistingPaths[$relativePath] -or $Force -or $matchesTemplate) { $hash } else { $null }
         }
     }
 
@@ -411,6 +514,27 @@ if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
     }
 } else {
     Write-Host 'SKIP   harness.lock.json'
+    if ($Force) {
+        $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
+        $refreshedManagedFiles = @()
+        foreach ($file in $selectedFiles | Where-Object { $_.ownership -eq 'managed' }) {
+            $relativePath = [string]$file.path
+            $destinationPath = Join-Path $target $relativePath
+            if (Test-Path -LiteralPath $destinationPath -PathType Leaf) {
+                $refreshedManagedFiles += [ordered]@{
+                    path = $relativePath
+                    ownership = 'managed'
+                    baselineHash = Get-FileContentHash -Path $destinationPath
+                }
+            }
+        }
+        $lock.managedFiles = @($refreshedManagedFiles)
+        $lock.harnessVersion = [string]$manifest.harnessVersion
+        if ($PSCmdlet.ShouldProcess($lockPath, 'Refresh Harness lock after managed migration')) {
+            Write-Utf8NoBom -Path $lockPath -Content (($lock | ConvertTo-Json -Depth 8) + [Environment]::NewLine)
+            Write-Host 'UPDATE harness.lock.json (managed migration baselines refreshed)'
+        }
+    }
 }
 
 Write-Host ''
@@ -425,6 +549,10 @@ Write-Host '1. Fill docs/project-map.md with verified repository facts.'
 Write-Host '2. Add real project checks to harness.config.json.'
 Write-Host '3. Remove TODO(HARNESS) markers after review.'
 Write-Host '4. Run scripts/verify.ps1 -Scope All.'
+if ($Profile -eq 'Standard') {
+    Write-Host '5. Optional: enable the local catalog pre-commit hook after review:'
+    Write-Host '   powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1'
+}
 Write-Host ''
 if ($WhatIfPreference) {
     Write-Host 'Status: preview only; no files were written.' -ForegroundColor Yellow

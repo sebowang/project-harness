@@ -17,7 +17,7 @@ PowerShell 脚本仓库，使用 JSON、Markdown 和 GitHub Actions；初始化�
 | 模块 | 主要位置 | 职责 | 边界与风险 |
 |---|---|---|---|
 | 模板与清单 | `templates/`、`templates/manifest.json` | 维护 Light/Standard 输出和所有权 | 不写入业务代码 |
-| 验证 | `scripts/check-*.ps1`、`scripts/verify.ps1`、`tests/initialize-smoke.ps1` | Harness 完整性、readiness、状态和回归 | 不代表目标项目业务正确 |
+| 验证 | `scripts/check-*.ps1`、`scripts/update-artifact-catalog.ps1`、`scripts/verify.ps1`、`tests/initialize-smoke.ps1` | Harness 完整性、artifact catalog、readiness、状态和回归 | 不代表目标项目业务正确 |
 | 文档与工作流 | `docs/`、`templates/standard/docs/workflows/` | 规则、事实、流程和能力入口 | 事实必须可由仓库证据复核 |
 
 ## 依赖方向
@@ -27,6 +27,7 @@ PowerShell 脚本仓库，使用 JSON、Markdown 和 GitHub Actions；初始化�
 ## 共享契约与高风险区域
 
 - 外部边界：GitHub Actions 只运行仓库 Smoke Test；初始化器不执行目标项目命令，项目命令由目标仓库 `harness.config.json` 显式提供。
+- Git Hook 是显式、可撤销的本地反馈机制；初始化器不修改 `core.hooksPath`，完整验证仍由 CI 或人工运行 `verify.ps1`。
 
 ## 验收路径
 

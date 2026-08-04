@@ -6,6 +6,8 @@ TODO(HARNESS)：用两到三句话说明项目服务对象、核心能力和明�
 
 本文件是 Codex、Claude Code 和 Trae 共用的项目规则事实源。`CLAUDE.md` 只导入本文件，不在其他工具入口复制规则正文。
 
+{{HARNESS_RULES_BLOCK}}
+
 ## 修改前必读
 
 1. 本文件。

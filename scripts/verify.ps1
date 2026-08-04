@@ -25,6 +25,11 @@ if ($Scope -in @('Harness', 'All')) {
     if (Test-Path -LiteralPath $driftScript -PathType Leaf) {
         Invoke-CheckedScript -Path $driftScript
     }
+
+    $catalogScript = Join-Path $PSScriptRoot 'check-artifact-catalog.ps1'
+    if (Test-Path -LiteralPath $catalogScript -PathType Leaf) {
+        Invoke-CheckedScript -Path $catalogScript
+    }
 }
 
 if ($Scope -eq 'All') {

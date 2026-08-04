@@ -15,6 +15,7 @@
 | `requiredPaths` | string array | 必须存在的 Harness 普通文件 |
 | `projectValidation` | object array | 真实项目验证命令 |
 | `driftChecks` | object array | 文档漂移断言 |
+| `artifactCatalogs` | object array | 由目录内容生成并校验的 README 索引 |
 | `capabilities` | string array | 已由项目确认启用的可选能力标识 |
 | `readiness` | object | 项目就绪条件和豁免 |
 
@@ -43,3 +44,23 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 ## 文档漂移
 
 `driftChecks[].pattern` 是 .NET 正则表达式。每个条目还需要 `path`、`description` 和布尔值 `expectMatch`。
+
+## Artifact catalog
+
+```json
+{
+  "name": "Harness checks",
+  "directory": "tests/harness",
+  "include": "*.ps1",
+  "indexPath": "tests/harness/README.md"
+}
+```
+
+`directory` 和 `indexPath` 必须位于仓库内，`include` 只能是文件名匹配模式。更新器按稳定顺序枚举目录的直接子文件，并只替换 README 中唯一的 `PROJECT-HARNESS:CATALOG` 标记区块：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/update-artifact-catalog.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check-artifact-catalog.ps1
+```
+
+若本项目从旧版 Standard 升级，项目拥有的 `harness.config.json` 和 `tests/harness/README.md` 不会被静默改写；应显式加入配置与标记区块后再启用检查。

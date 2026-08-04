@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.1.2",
+    "harnessVersion":  "1.2.0",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "managedFiles":  [
@@ -17,32 +17,32 @@
                          {
                              "path":  "docs/harness-configuration.md",
                              "ownership":  "managed",
-                             "baselineHash":  null
+                             "baselineHash":  "8732EFF9928B3833EA7293F5F332268ADFB39B7DDB22FF969F390456DC321101"
                          },
                          {
                              "path":  "scripts/check-harness.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "4ABCA4BE07846D7B1C9F099C51EFDC976D8ADD5A306B944CD9D6877BE4BDB194"
+                             "baselineHash":  "A1F8DC7237D5662DB5151DE53EEC83C8E5873B72BC0A604C244C6CD0B19C8437"
                          },
                          {
                              "path":  "scripts/check-readiness.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "BDDAA1D8735F98F0B3F98548F144B1DF6711161991DB646F12CAD39495C643F7"
+                             "baselineHash":  "E85A96CCCF294AE976B7595F54B33C7E69B33836D2C8C10D80ED166707DE6785"
                          },
                          {
                              "path":  "scripts/harness-doctor.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "241C95257E367558725461708DCD13E87A0402E3461F0A1A6B8F2085D1EFB1DC"
+                             "baselineHash":  "A836FE78FBC000F7C291437D422FCE97F96AF4A20E0EEDBA15F4F01932992753"
                          },
                          {
                              "path":  "scripts/harness-status.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "CDA0E304B21AC56F2E96BD25F73C23544E976D8B21F3565EBC1714674B395246"
+                             "baselineHash":  "9BB8089971289EAB2874149D736E247DC3C8D0639F0E3E0CBDC27274F1E6C147"
                          },
                          {
                              "path":  "scripts/verify.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "F6B6F62E0CD24CE6AC4776FD772DAD33E114E3E18763C2AD5D2DC532BB82A8BB"
+                             "baselineHash":  "4D0C5466B2E5E94E7450BB028A575BD01A47ECA91C2DB4DE0A948503873A14C2"
                          },
                          {
                              "path":  ".agents/skills/adversarial-review/SKILL.md",
@@ -177,7 +177,7 @@
                          {
                              "path":  "docs/workflows/project-onboarding.md",
                              "ownership":  "managed",
-                             "baselineHash":  "749F7897C16A8AD1B5E6102F032C330CE5684D8FA4EEDF6101DC1F4D14DF31A7"
+                             "baselineHash":  "C4685415B4FD1C346AC4A803A79367AFEE4D54042D9ACA9DAFA3AB1D9BE41F79"
                          },
                          {
                              "path":  "docs/workflows/testing.md",
@@ -197,7 +197,27 @@
                          {
                              "path":  "scripts/check-doc-drift.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "230A3CF6782EDA31F506459156511304C722F83D2C016A4F56D5A9804ED81C30"
+                             "baselineHash":  "876242BEDFC2321397E973B96D93F7688C81028368B351417E4D1C4B7210F96B"
+                         },
+                         {
+                             "path":  "scripts/check-artifact-catalog.ps1",
+                             "ownership":  "managed",
+                             "baselineHash":  "93464AA54D15EB6097DAC9A38E50B172D67A4F271AC117D4DC418097854EC65E"
+                         },
+                         {
+                             "path":  "scripts/update-artifact-catalog.ps1",
+                             "ownership":  "managed",
+                             "baselineHash":  "AE0EC1B2A66AD1C3D087F03AC3E1AFC1181BD79BEFDB45AAC139217D63F0B93C"
+                         },
+                         {
+                             "path":  "scripts/install-git-hooks.ps1",
+                             "ownership":  "managed",
+                             "baselineHash":  "FB382B44E7B466B88E308B3A8AE63EF4EA45C9988882662D43CFECAEB9053728"
+                         },
+                         {
+                             "path":  ".githooks/pre-commit",
+                             "ownership":  "managed",
+                             "baselineHash":  "45752CB75AC8B34473B54F051A80AE1553C29EC2A0387287B2A4D632D8F408B5"
                          }
                      ]
 }
