@@ -2,6 +2,14 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.3.1] - 2026-08-05
+
+### Fixed
+
+- `-Update` 现在会报告落后的 `AGENTS.md` 受控区块、缺失的 project-owned 模板和 `harness.config.json`/lock 版本差异，避免 lock 升级后静默形成部分升级状态。
+- `-Update -MergeProjectRules` 可以在预览和确认后备份并刷新 `AGENTS.md` 标记内的 Harness 区块，不覆盖项目规则区块外内容。
+- Update 结束状态改为 `updated` 或明确的 project-owned follow-up，不再使用首次安装的状态措辞。
+
 ## [1.3.0] - 2026-08-05
 
 ### Added

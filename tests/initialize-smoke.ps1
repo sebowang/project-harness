@@ -373,13 +373,59 @@ try {
     $upstreamStatus = Join-Path $updateSourceRoot 'templates\base\scripts\harness-status.ps1'
     Add-Content -LiteralPath $upstreamStatus -Value "`n# Upstream smoke update"
     $targetStatus = Join-Path $testRoot 'scripts\harness-status.ps1'
+    $legacyAgentsBlock = "<!-- PROJECT-HARNESS:BEGIN -->`n## Legacy Harness rules`n<!-- PROJECT-HARNESS:END -->`n"
+    [IO.File]::WriteAllText($existingAgents, "# Existing rules`n`n$legacyAgentsBlock", (New-Object Text.UTF8Encoding($false)))
+    $legacyLessonsPath = Join-Path $testRoot 'docs\lessons\README.md'
+    Remove-Item -LiteralPath $legacyLessonsPath -Force
+    $legacyConfig = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+    $legacyConfig.harnessVersion = '1.2.0'
+    $legacyConfig.requiredPaths = @($legacyConfig.requiredPaths | Where-Object { $_ -ne 'docs/lessons/README.md' })
+    $legacyConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
     $beforeDryRun = [IO.File]::ReadAllBytes($targetStatus)
     $updateInitializer = Join-Path $updateSourceRoot 'scripts\initialize-project.ps1'
-    & $updateInitializer -TargetPath $testRoot -Update -WhatIf
+    $updatePreview = (& $updateInitializer -TargetPath $testRoot -Update -WhatIf 6>&1 | Out-String)
     if (-not $?) { throw 'Managed update dry-run failed.' }
+    foreach ($expectedAttention in @('NOTICE   AGENTS.md', 'NOTICE   docs/lessons/README.md', 'NOTICE   harness.config.json')) {
+        if ($updatePreview -notmatch [regex]::Escape($expectedAttention)) {
+            throw "Managed update preview did not report project-owned follow-up: $expectedAttention"
+        }
+    }
     if ([Convert]::ToBase64String($beforeDryRun) -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes($targetStatus))) {
         throw 'Managed update dry-run changed a target file.'
     }
+    if ((Get-Content -LiteralPath $existingAgents -Raw) -notmatch [regex]::Escape('Legacy Harness rules')) {
+        throw 'Managed update preview changed the project-owned AGENTS.md block.'
+    }
+    $mergePreview = (& $updateInitializer -TargetPath $testRoot -Update -MergeProjectRules -WhatIf 6>&1 | Out-String)
+    if (-not $?) { throw 'Managed rules-block update preview failed.' }
+    if ($mergePreview -notmatch [regex]::Escape('MERGE    AGENTS.md')) {
+        throw 'Managed rules-block update preview did not plan the AGENTS.md merge.'
+    }
+    $mergedUpdateOutput = (& $updateInitializer -TargetPath $testRoot -Update -MergeProjectRules 6>&1 | Out-String)
+    if (-not $?) { throw 'Managed rules-block update failed.' }
+    if ($mergedUpdateOutput -notmatch [regex]::Escape('MERGE    AGENTS.md')) {
+        throw 'Managed rules-block update did not report the AGENTS.md merge.'
+    }
+    $updatedAgents = Get-Content -LiteralPath $existingAgents -Raw
+    if (([regex]::Matches($updatedAgents, '<!-- PROJECT-HARNESS:BEGIN -->')).Count -ne 1 -or $updatedAgents -match [regex]::Escape('Legacy Harness rules')) {
+        throw 'Managed rules-block update did not replace the stale AGENTS.md block.'
+    }
+    foreach ($currentBlockMarker in @('project-start', 'durable-plan', 'knowledge-capture')) {
+        if ($updatedAgents -notmatch [regex]::Escape($currentBlockMarker)) {
+            throw "Managed rules-block update is missing current rule marker: $currentBlockMarker"
+        }
+    }
+    if (-not (Get-ChildItem -LiteralPath (Join-Path $testRoot '.harness-backup') -Recurse -Filter 'AGENTS.md' -File | Select-Object -First 1)) {
+        throw 'Managed rules-block update did not back up AGENTS.md.'
+    }
+    if (Test-Path -LiteralPath $legacyLessonsPath) {
+        throw 'Managed update unexpectedly created a missing project-owned template.'
+    }
+    if ((Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json).harnessVersion -ne '1.2.0') {
+        throw 'Managed update unexpectedly rewrote project-owned harness.config.json.'
+    }
+    Copy-Item -LiteralPath (Join-Path $updateSourceRoot 'templates\standard\docs\lessons\README.md') -Destination $legacyLessonsPath -Force
+    [IO.File]::WriteAllText($configPath, $readyConfig, (New-Object Text.UTF8Encoding($false)))
     & $updateInitializer -TargetPath $testRoot -Update
     if (-not $?) { throw 'Managed update failed.' }
     if ([IO.File]::ReadAllText($existingManaged) -ne "# Existing managed-path content`n") {
@@ -393,9 +439,10 @@ try {
         throw 'Managed update did not install upstream content.'
     }
 
+    $agentsBeforeForce = [IO.File]::ReadAllText($existingAgents)
     $configBeforeForce = [IO.File]::ReadAllText($configPath)
     & $initializer -TargetPath $testRoot -Profile Standard -ProjectName 'Changed By Force' -Force
-    if ([IO.File]::ReadAllText($existingAgents) -ne $mergedExistingAgents) {
+    if ([IO.File]::ReadAllText($existingAgents) -ne $agentsBeforeForce) {
         throw '-Force overwrote a project-owned AGENTS.md.'
     }
     if ([IO.File]::ReadAllText($configPath) -ne $configBeforeForce) {

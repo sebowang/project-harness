@@ -178,9 +178,6 @@ if ($Update -and -not (Test-Path -LiteralPath $target -PathType Container)) {
 if ($Update -and ($Force -or $PSBoundParameters.ContainsKey('Profile') -or $PSBoundParameters.ContainsKey('ProjectName'))) {
     throw '-Update uses profile and project name from harness.lock.json and cannot be combined with -Force, -Profile, or -ProjectName.'
 }
-if ($Update -and $MergeProjectRules) {
-    throw '-MergeProjectRules is only supported during fresh installation; run it without -Update.'
-}
 if ($Prune -and -not $Update) {
     throw '-Prune is only valid together with -Update.'
 }
@@ -231,6 +228,7 @@ if ($Update) {
     $unmanaged = @()
     $orphans = @()
     $prunes = @()
+    $projectOwnedAttention = @()
     $nextManagedFiles = @()
     $lockStateChanged = $false
     foreach ($manifestFile in @($manifest.files | Where-Object { $_.layer -in $selectedLayers -and $_.ownership -eq 'managed' })) {
@@ -308,16 +306,78 @@ if ($Update) {
             }
         }
     }
+
+    $agentsPath = Join-Path $target 'AGENTS.md'
+    if (Test-Path -LiteralPath $agentsPath -PathType Leaf) {
+        try {
+            $mergedRules = Merge-HarnessRulesBlock -Path $agentsPath -RulesBlock $harnessRulesBlock
+            $currentRules = [IO.File]::ReadAllText($agentsPath)
+            if ($mergedRules -ne $currentRules) {
+                if ($MergeProjectRules) {
+                    $changes += [pscustomobject]@{ Path = 'AGENTS.md'; Destination = $agentsPath; Content = $mergedRules; Hash = $null; NewFile = $false; Action = 'MERGE' }
+                } else {
+                    $projectOwnedAttention += 'AGENTS.md (Harness rules block differs from this version; rerun with -Update -MergeProjectRules to refresh only the managed block)'
+                }
+            }
+        } catch {
+            if ($MergeProjectRules) {
+                $conflicts += "AGENTS.md (cannot merge Harness rules block: $($_.Exception.Message))"
+            } else {
+                $projectOwnedAttention += "AGENTS.md (cannot inspect Harness rules block: $($_.Exception.Message))"
+            }
+        }
+    } elseif ($MergeProjectRules) {
+        $conflicts += 'AGENTS.md (missing; cannot merge Harness rules block)'
+    } else {
+        $projectOwnedAttention += 'AGENTS.md (missing project-owned rules file)'
+    }
+
+    foreach ($manifestFile in @($manifest.files | Where-Object { $_.layer -in $selectedLayers -and $_.ownership -eq 'project' -and $_.path -ne 'AGENTS.md' })) {
+        $relativePath = [string]$manifestFile.path
+        if (-not (Test-Path -LiteralPath (Join-Path $target $relativePath) -PathType Leaf)) {
+            $projectOwnedAttention += "$relativePath (project-owned template is missing; review and create it manually if needed)"
+        }
+    }
+
+    $configPath = Join-Path $target 'harness.config.json'
+    if (Test-Path -LiteralPath $configPath -PathType Leaf) {
+        try {
+            $configVersion = [string]((Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json).harnessVersion)
+            if ($configVersion -ne [string]$manifest.harnessVersion) {
+                if ([string]::IsNullOrWhiteSpace($configVersion)) { $configVersion = 'missing' }
+                $projectOwnedAttention += "harness.config.json (harnessVersion $configVersion differs from updated lock $($manifest.harnessVersion); project-owned configuration was not rewritten)"
+            }
+        } catch {
+            $projectOwnedAttention += "harness.config.json (cannot read harnessVersion: $($_.Exception.Message))"
+        }
+    } else {
+        $projectOwnedAttention += 'harness.config.json (missing project-owned configuration file)'
+    }
+
     $lockMetadataChanged = $lockStateChanged -or ([string]$lock.harnessVersion -ne [string]$manifest.harnessVersion)
-    Write-Host "Update plan: $($changes.Count) file update(s), $($prunes.Count) orphan prune(s), $($orphans.Count) orphaned file(s), $($unmanaged.Count) unmanaged skip(s), $($conflicts.Count) conflict(s)."
-    foreach ($change in $changes) { Write-Host "UPDATE   $($change.Path)" }
+    Write-Host "Update plan: $($changes.Count) file update(s), $($prunes.Count) orphan prune(s), $($orphans.Count) orphaned file(s), $($unmanaged.Count) unmanaged skip(s), $($projectOwnedAttention.Count) project-owned attention item(s), $($conflicts.Count) conflict(s)."
+    foreach ($change in $changes) {
+        $action = if ($null -ne $change.PSObject.Properties['Action']) { [string]$change.Action } else { 'UPDATE' }
+        $changeLabel = if ($action -eq 'MERGE') { "MERGE    $($change.Path)" } else { "UPDATE   $($change.Path)" }
+        Write-Host $changeLabel
+    }
     foreach ($prunePlan in $prunes) { Write-Host "PRUNE    $($prunePlan.Path)" -ForegroundColor Yellow }
     foreach ($relativePath in $orphans) { Write-Host "ORPHANED $relativePath (retained; run -Update -Prune to remove an unmodified file)" -ForegroundColor Yellow }
     foreach ($relativePath in $unmanaged) { Write-Host "SKIP     $relativePath (no trusted baseline)" -ForegroundColor Yellow }
+    foreach ($item in $projectOwnedAttention) { Write-Host "NOTICE   $item" -ForegroundColor Yellow }
     if ($lockMetadataChanged) { Write-Host "UPDATE   harness.lock.json ($($lock.harnessVersion) -> $($manifest.harnessVersion))" }
     foreach ($conflict in $conflicts) { Write-Host "CONFLICT $conflict" -ForegroundColor Red }
     if ($conflicts.Count -gt 0) { exit 1 }
-    if ($changes.Count -eq 0 -and $prunes.Count -eq 0 -and -not $lockMetadataChanged) { Write-Host 'No managed file updates are required.'; exit 0 }
+    if ($changes.Count -eq 0 -and $prunes.Count -eq 0 -and -not $lockMetadataChanged) {
+        if ($WhatIfPreference) {
+            Write-Host 'Status: update preview only; no files were written.' -ForegroundColor Yellow
+        } elseif ($projectOwnedAttention.Count -gt 0) {
+            Write-Host 'Status: no managed files changed; project-owned follow-up is required.' -ForegroundColor Yellow
+        } else {
+            Write-Host 'No managed file updates are required.'
+        }
+        exit 0
+    }
     $backupRoot = Join-Path $target (Join-Path '.harness-backup' (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
     $written = New-Object System.Collections.Generic.List[object]
     $removed = New-Object System.Collections.Generic.List[object]
@@ -327,7 +387,8 @@ if ($Update) {
             Copy-Item -LiteralPath $lockPath -Destination (Join-Path $backupRoot 'harness.lock.json') -Force
         }
         foreach ($change in $changes) {
-            if ($PSCmdlet.ShouldProcess($change.Destination, 'Update managed Harness file')) {
+            $operation = if ($null -ne $change.PSObject.Properties['Action'] -and $change.Action -eq 'MERGE') { 'Merge managed Harness rules block' } else { 'Update managed Harness file' }
+            if ($PSCmdlet.ShouldProcess($change.Destination, $operation)) {
                 $backupPath = Join-Path $backupRoot $change.Path
                 New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
                 if (-not $change.NewFile) { Copy-Item -LiteralPath $change.Destination -Destination $backupPath -Force }
@@ -367,6 +428,13 @@ if ($Update) {
         $lockBackupPath = Join-Path $backupRoot 'harness.lock.json'
         if (Test-Path -LiteralPath $lockBackupPath -PathType Leaf) { Copy-Item -LiteralPath $lockBackupPath -Destination $lockPath -Force }
         throw
+    }
+    if ($WhatIfPreference) {
+        Write-Host 'Status: update preview only; no files were written.' -ForegroundColor Yellow
+    } elseif ($projectOwnedAttention.Count -gt 0) {
+        Write-Host 'Status: updated; project-owned follow-up is required.' -ForegroundColor Yellow
+    } else {
+        Write-Host 'Status: updated.' -ForegroundColor Green
     }
     exit 0
 }

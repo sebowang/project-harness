@@ -1,4 +1,4 @@
-# Project Harness v1.3.0
+# Project Harness v1.3.1
 
 [中文](README.md) | [English](README.en.md)
 
@@ -7,7 +7,7 @@
 
 Project Harness 是一套非破坏性的 AI 辅助开发初始化工具：默认只创建缺失文件，不覆盖已有规则。Codex、Claude Code 和 Trae 读取同一份 `AGENTS.md` 规则，共用一个 `verify.ps1` 验证入口。
 
-当前版本：`v1.3.0`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
+当前版本：`v1.3.1`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
 
 ## 它解决什么问题
 
@@ -155,7 +155,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
   -TargetPath "C:\path\to\your-repository" -Update
 ```
 
-更新只替换自上次安装后未被本地修改的受管文件。出现双方都改过同一路径、文件缺失或路径冲突时，更新在写入前停止；原文件和 lock 会备份到 `.harness-backup/<timestamp>/`。新版本不再管理的旧文件默认保留并标记为 `ORPHANED`，确认不再需要且未被本地修改时，用 `-Prune` 显式清理。
+更新只替换自上次安装后未被本地修改的受管文件。出现双方都改过同一路径、文件缺失或路径冲突时，更新在写入前停止；原文件和 lock 会备份到 `.harness-backup/<timestamp>/`。新版本不再管理的旧文件默认保留并标记为 `ORPHANED`，确认不再需要且未被本地修改时，用 `-Prune` 显式清理。Update plan 还会列出需要项目确认的缺失 project-owned 模板、配置版本差异和落后的 `AGENTS.md` 受控区块；需要刷新后者时，在预览和确认后追加 `-MergeProjectRules`。
 
 ### 让 Agent 帮你更新
 
@@ -164,7 +164,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 <details>
 <summary>展开并复制更新指令</summary>
 
-> 在当前 Git 仓库更新 Project Harness。先确认仓库根目录、`git status --short`、`harness.lock.json` 和当前 Harness 版本，保留所有已有修改。先从 GitHub Releases 解析最新稳定 Release 并报告实际版本号，再将该固定版本克隆到系统临时目录，从克隆目录运行 `scripts/initialize-project.ps1 -TargetPath <当前仓库> -Update -WhatIf`。报告计划更新的文件、已修改或缺失的受管文件、冲突、`ORPHANED` 文件、备份位置和预计影响；不要使用 `-Force` 解决 `-Update` 冲突，不要改写项目拥有的 `AGENTS.md` 区块外内容、`harness.config.json`、项目地图、验证文档或业务源码。等待我确认预览结果；确认后才运行不带 `-WhatIf` 的 `-Update`。更新完成后运行 `scripts/harness-doctor.ps1` 和 `scripts/verify.ps1 -Scope Harness`；只有项目验证配置已确认且实际通过时，才运行并报告 `scripts/verify.ps1 -Scope All`。不要自动安装依赖、启用 Git Hook、修改 CI 或执行部署操作。`
+> 在当前 Git 仓库更新 Project Harness。先确认仓库根目录、`git status --short`、`harness.lock.json` 和当前 Harness 版本，保留所有已有修改。先从 GitHub Releases 解析最新稳定 Release 并报告实际版本号，再将该固定版本克隆到系统临时目录，从克隆目录运行 `scripts/initialize-project.ps1 -TargetPath <当前仓库> -Update -WhatIf`。报告计划更新的文件、已修改或缺失的受管文件、冲突、`ORPHANED` 文件、缺失 project-owned 模板、配置版本差异、`AGENTS.md` 受控区块是否落后、备份位置和预计影响；不要使用 `-Force` 解决 `-Update` 冲突，不要改写项目拥有的 `AGENTS.md` 区块外内容、`harness.config.json`、项目地图、验证文档或业务源码。若确认需要刷新 `AGENTS.md` 受控区块，再单独预览 `-Update -MergeProjectRules -WhatIf`，确认后才使用 `-Update -MergeProjectRules`；其他项目拥有文件仍只报告，不自动创建。等待我确认预览结果后才执行对应更新。更新完成后运行 `scripts/harness-doctor.ps1` 和 `scripts/verify.ps1 -Scope Harness`；只有项目验证配置已确认且实际通过时，才运行并报告 `scripts/verify.ps1 -Scope All`。不要自动安装依赖、启用 Git Hook、修改 CI 或执行部署操作。`
 
 </details>
 

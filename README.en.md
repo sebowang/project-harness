@@ -1,4 +1,4 @@
-# Project Harness v1.3.0
+# Project Harness v1.3.1
 
 [中文](README.md) | English
 
@@ -7,7 +7,7 @@
 
 Project Harness is a non-destructive setup for AI-assisted development. It installs only what is missing and never overwrites your existing rules. Codex, Claude Code, and Trae read the same `AGENTS.md` as the single source of rules and share one validation entry point, `verify.ps1`.
 
-Current version: `v1.3.0`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
+Current version: `v1.3.1`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
 
 ## What Problem It Solves
 
@@ -155,7 +155,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
   -TargetPath "C:\path\to\your-repository" -Update
 ```
 
-Updates replace only managed files that have not been locally modified since the last install. If both sides changed the same path, a file is missing, or a path conflicts, the update stops before writing; the original files and lock are backed up under `.harness-backup/<timestamp>/`. A file a new version no longer manages is kept by default and marked `ORPHANED`; once you confirm it is not needed and it has not been locally modified, clean it up explicitly with `-Prune`.
+Updates replace only managed files that have not been locally modified since the last install. If both sides changed the same path, a file is missing, or a path conflicts, the update stops before writing; the original files and lock are backed up under `.harness-backup/<timestamp>/`. A file a new version no longer manages is kept by default and marked `ORPHANED`; once you confirm it is not needed and it has not been locally modified, clean it up explicitly with `-Prune`. The update plan also reports missing project-owned templates, configuration-version differences, and a stale managed `AGENTS.md` block; preview and confirm `-MergeProjectRules` when that block needs refreshing.
 
 ### Ask an Agent to Update It
 
@@ -164,7 +164,7 @@ In a target repository that already has Harness installed, give the following na
 <details>
 <summary>Expand and copy the update instruction</summary>
 
-> Update Project Harness in the current Git repository. First confirm the repository root, `git status --short`, `harness.lock.json`, and the current Harness version, preserving all existing modifications. Resolve the latest stable Release from GitHub Releases and report the exact version, then clone that fixed version into a system temp directory and run `scripts/initialize-project.ps1 -TargetPath <current repository> -Update -WhatIf` from the clone. Report planned files, locally modified or missing managed files, conflicts, `ORPHANED` files, backup location, and expected impact. Do not use `-Force` to resolve an `-Update` conflict, and do not rewrite content outside the managed `AGENTS.md` block, `harness.config.json`, project map, verification docs, or business source. Wait for my confirmation of the preview; only then run `-Update` without `-WhatIf`. After the update, run `scripts/harness-doctor.ps1` and `scripts/verify.ps1 -Scope Harness`; run and report `scripts/verify.ps1 -Scope All` only when project validation is configured and confirmed. Do not install dependencies, enable Git Hooks, modify CI, or run deployment operations automatically.
+> Update Project Harness in the current Git repository. First confirm the repository root, `git status --short`, `harness.lock.json`, and the current Harness version, preserving all existing modifications. Resolve the latest stable Release from GitHub Releases and report the exact version, then clone that fixed version into a system temp directory and run `scripts/initialize-project.ps1 -TargetPath <current repository> -Update -WhatIf` from the clone. Report planned files, locally modified or missing managed files, conflicts, `ORPHANED` files, missing project-owned templates, configuration-version differences, whether the managed `AGENTS.md` block is stale, backup location, and expected impact. Do not use `-Force` to resolve an `-Update` conflict, and do not rewrite content outside the managed `AGENTS.md` block, `harness.config.json`, project map, verification docs, or business source. If the managed block needs refreshing, separately preview `-Update -MergeProjectRules -WhatIf`, then use `-Update -MergeProjectRules` only after confirmation; other project-owned files remain report-only. Wait for my confirmation before applying the selected update. After the update, run `scripts/harness-doctor.ps1` and `scripts/verify.ps1 -Scope Harness`; run and report `scripts/verify.ps1 -Scope All` only when project validation is configured and confirmed. Do not install dependencies, enable Git Hooks, modify CI, or run deployment operations automatically.
 
 </details>
 

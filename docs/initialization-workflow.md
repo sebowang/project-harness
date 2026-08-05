@@ -62,10 +62,11 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 - 新的受管文件且目标路径不存在：自动创建。
 - 本地与上游都变化、受管文件缺失或路径碰撞：整次更新在写入前停止。
 - 上游已移除的受管文件：默认报告为 `ORPHANED` 并保留；只有 `-Update -Prune` 才会删除仍等于受信基线的文件。无基线、已修改或非普通文件的孤儿路径必须人工处理。
-- 项目所有文件和 `harness.config.json`：不自动覆盖。
+- 项目所有文件和 `harness.config.json`：不自动覆盖。缺失的项目拥有模板、`AGENTS.md` 受控区块与目标版本不同、或配置版本与 lock 不同，都会在 Update plan 中以 `NOTICE` 列出；这些提示不会静默视为完整升级。
+- 需要刷新已有 `AGENTS.md` 的受控区块时，显式使用 `-Update -MergeProjectRules`。它只改写标记内区块、先备份原文件；项目规则区块外内容仍不会覆盖。其他缺失的项目拥有模板仍由项目确认后创建。
 - 成功更新前备份受影响文件和原 lock；写入失败时尝试恢复到备份状态。
 
-配置 schema 需要迁移时，由对应版本提供显式迁移步骤；v1 不会借模板升级静默重写项目验证、豁免或漂移规则。
+配置 schema 需要迁移时，由对应版本提供显式迁移步骤；v1 不会借模板升级静默重写项目验证、豁免或漂移规则。`harness.config.json.harnessVersion` 与 lock 不同时会提示人工复核，不表示配置已自动迁移。
 
 ## 阶段四：填写项目事实
 

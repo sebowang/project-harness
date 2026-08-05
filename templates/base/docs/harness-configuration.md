@@ -4,6 +4,8 @@
 
 `harness.lock.json` 保存安装版本和受管文件基线，供只读 `harness-status.ps1` 和后续安全更新使用。
 
+`harness.config.json` 属于项目。安全 Update 不会自动改写它；若其中的 `harnessVersion` 与 lock 不同，Update plan 会提示人工复核该配置是否需要迁移。
+
 ## 字段
 
 | 字段 | 类型 | 说明 |

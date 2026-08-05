@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.3.0",
+    "harnessVersion":  "1.3.1",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "managedFiles":  [
@@ -17,22 +17,22 @@
                          {
                              "path":  "docs/harness-configuration.md",
                              "ownership":  "managed",
-                             "baselineHash":  "8732EFF9928B3833EA7293F5F332268ADFB39B7DDB22FF969F390456DC321101"
+                             "baselineHash":  "02037BAE59353A54534BA9D7D51F693D0B03156C11A024E75C39E57DDF57434C"
                          },
                          {
                              "path":  "scripts/check-harness.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "A1F8DC7237D5662DB5151DE53EEC83C8E5873B72BC0A604C244C6CD0B19C8437"
+                             "baselineHash":  "277BFD453871BF68B5014C4248839CAFD93E91CB3B7D91ED1950B38FB83669A1"
                          },
                          {
                              "path":  "scripts/check-readiness.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "E85A96CCCF294AE976B7595F54B33C7E69B33836D2C8C10D80ED166707DE6785"
+                             "baselineHash":  "790035BC5780D0F607BC9746EB94D2658D4DE2109139F6E4084448D63654379D"
                          },
                          {
                              "path":  "scripts/harness-doctor.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "A836FE78FBC000F7C291437D422FCE97F96AF4A20E0EEDBA15F4F01932992753"
+                             "baselineHash":  "CB5C86C88787879654A50177A95DF36BCCFBD56056C7B5C4CE6ED5A67C494941"
                          },
                          {
                              "path":  "scripts/harness-status.ps1",
@@ -90,6 +90,11 @@
                              "baselineHash":  "6956C668C0A3A235A6938A34E9D1F819737990F6DC744FF91D2B76A2C3827732"
                          },
                          {
+                             "path":  ".agents/skills/knowledge-capture/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "F82184124E6F303E51C4BCE6EADBB3EE217563D490174CCD1D0EBC28779EDFEB"
+                         },
+                         {
                              "path":  ".claude/skills/adversarial-review/SKILL.md",
                              "ownership":  "managed",
                              "baselineHash":  "5F7F9E3657687AB7C9507B2C0521F26A85F69F62E40411FA7334976D8E546124"
@@ -135,6 +140,11 @@
                              "baselineHash":  "6956C668C0A3A235A6938A34E9D1F819737990F6DC744FF91D2B76A2C3827732"
                          },
                          {
+                             "path":  ".claude/skills/knowledge-capture/SKILL.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "F82184124E6F303E51C4BCE6EADBB3EE217563D490174CCD1D0EBC28779EDFEB"
+                         },
+                         {
                              "path":  "docs/agent-compatibility.md",
                              "ownership":  "managed",
                              "baselineHash":  null
@@ -142,22 +152,22 @@
                          {
                              "path":  "docs/ci-platform-compatibility.md",
                              "ownership":  "managed",
-                             "baselineHash":  "A03FFD722E19A66DE779E4D421FCE1AEA92D91D4CDC09312F5CACD6BA875AF56"
+                             "baselineHash":  "2367FE5424AE038F13233C9FE15817D7249DF0E2A62238C1D0FA2616848D6221"
                          },
                          {
                              "path":  "docs/capabilities.md",
                              "ownership":  "managed",
-                             "baselineHash":  "B5B534E902CF7CC2D8141EA07714068D5DA235D21195B8C28FB44E237D6B3E9A"
+                             "baselineHash":  "5F4DF8FA06A3CEAA5805594C7226BF254D1DC4AF27F4F8C307AEFB27D17E1DD2"
                          },
                          {
                              "path":  "docs/workflows/adversarial-review.md",
                              "ownership":  "managed",
-                             "baselineHash":  "34FB0440E052042545BC1DBC2639076CC4D462D3E3790F96011C58F45A7FF549"
+                             "baselineHash":  "D121A60F4AD8E2D9065F477921946164E8B7BBECFB2C35C6F1E479611ED22892"
                          },
                          {
                              "path":  "docs/workflows/change-plan.md",
                              "ownership":  "managed",
-                             "baselineHash":  "C55827049C9A441F4CA15917F21285D96E26E528026291EA4317301257904EA7"
+                             "baselineHash":  "D607B52FF3A5F4E90B56A15D5B77B35413573EF7F0FD10B69A5205A89391D2E6"
                          },
                          {
                              "path":  "docs/workflows/harness-authoring.md",
@@ -167,17 +177,17 @@
                          {
                              "path":  "docs/workflows/project-handoff.md",
                              "ownership":  "managed",
-                             "baselineHash":  "326A61B394F623D7174743D60B779F60E1A5341B3FD33FBA832E2C50E47875F6"
+                             "baselineHash":  "DFE262FE86FB38721A888674CFFB9206EC5E8C15E2F7FBC10C578FEBFF0BA2EF"
                          },
                          {
                              "path":  "docs/workflows/project-start.md",
                              "ownership":  "managed",
-                             "baselineHash":  "4BC6BAB9886FB1ED62F75900169BD78A4EE5456000AE10DE4F009101EE3B2631"
+                             "baselineHash":  "F8F6BD72896C65959211C18CB22A3313BB51BE7329334646F61291F02F734892"
                          },
                          {
                              "path":  "docs/workflows/project-onboarding.md",
                              "ownership":  "managed",
-                             "baselineHash":  "C4685415B4FD1C346AC4A803A79367AFEE4D54042D9ACA9DAFA3AB1D9BE41F79"
+                             "baselineHash":  "8DEC342DAF864E5FEFDDDC04F29D7A2F49AE3CB16C59D04380A1F8C9286666A7"
                          },
                          {
                              "path":  "docs/workflows/testing.md",
@@ -192,7 +202,12 @@
                          {
                              "path":  "docs/workflows/durable-plan.md",
                              "ownership":  "managed",
-                             "baselineHash":  "01B287AF576F17DEFFBF7532BC775BAF69CA697093A61FB11658A3ABFFB97328"
+                             "baselineHash":  "EDD335F242AD725F3FECB6ABA5B57190E30030C20898C3C5CF1BC0B872E14321"
+                         },
+                         {
+                             "path":  "docs/workflows/knowledge-capture.md",
+                             "ownership":  "managed",
+                             "baselineHash":  "46B795E0D1F4002498069A5ACEE7DE40EDFA86744DEB9FECE2A9BB55490514C0"
                          },
                          {
                              "path":  "scripts/check-doc-drift.ps1",
