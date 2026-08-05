@@ -1,4 +1,4 @@
-# Project Harness v1.2.0
+# Project Harness v1.3.0
 
 [中文](README.md) | [English](README.en.md)
 
@@ -7,7 +7,7 @@
 
 Project Harness 是一套非破坏性的 AI 辅助开发初始化工具：默认只创建缺失文件，不覆盖已有规则。Codex、Claude Code 和 Trae 读取同一份 `AGENTS.md` 规则，共用一个 `verify.ps1` 验证入口。
 
-当前版本：`v1.2.0`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
+当前版本：`v1.3.0`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
 
 ## 它解决什么问题
 
@@ -64,7 +64,7 @@ PowerShell 7 环境改用 `pwsh -File ...`，路径写成 `/path/to/repository`�
 安装完成后还差两步，Harness 才对你的项目真正有用：
 
 1. 让 Agent 按 `project-onboarding` 工作流以只读方式勘察仓库并给出 Proposal，你确认后它才会写入项目文件。
-2. 根据真实源码填写 `docs/project-map.md`，并在 `harness.config.json` 的 `projectValidation` 中配置项目实际可运行的构建、测试、Lint 或 Smoke Check。
+2. 根据真实源码填写 `docs/project-map.md`，并在 `harness.config.json` 的 `projectValidation` 中配置项目实际可运行的构建、测试、Lint 或 Smoke Check；为命令标注 `kind`，编译型项目在 `readiness.requiredValidationKinds` 声明 `build`。
 
 然后运行完整检查：
 
@@ -72,7 +72,7 @@ PowerShell 7 环境改用 `pwsh -File ...`，路径写成 `/path/to/repository`�
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 ```
 
-`Standard` 至少需要一个项目验证命令。确实没有可运行命令时，可以在 `readiness.projectValidationWaiver` 写明原因；状态会显示为 `ready with waiver`，而不是普通的通过状态。
+`Standard` 至少需要一个项目验证命令。确实没有可运行命令，或编译型项目缺少可执行的 `build` 证据时，可以在 `readiness.projectValidationWaiver` 写明原因；状态会显示为 `ready with waiver`，而不是普通的通过状态。
 
 ## 装好以后怎么用
 
@@ -157,6 +157,19 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 
 更新只替换自上次安装后未被本地修改的受管文件。出现双方都改过同一路径、文件缺失或路径冲突时，更新在写入前停止；原文件和 lock 会备份到 `.harness-backup/<timestamp>/`。新版本不再管理的旧文件默认保留并标记为 `ORPHANED`，确认不再需要且未被本地修改时，用 `-Prune` 显式清理。
 
+### 让 Agent 帮你更新
+
+在已安装 Harness 的目标仓库中，可以直接把下面这段自然语言指令交给 Agent：
+
+<details>
+<summary>展开并复制更新指令</summary>
+
+> 在当前 Git 仓库更新 Project Harness。先确认仓库根目录、`git status --short`、`harness.lock.json` 和当前 Harness 版本，保留所有已有修改。先从 GitHub Releases 解析最新稳定 Release 并报告实际版本号，再将该固定版本克隆到系统临时目录，从克隆目录运行 `scripts/initialize-project.ps1 -TargetPath <当前仓库> -Update -WhatIf`。报告计划更新的文件、已修改或缺失的受管文件、冲突、`ORPHANED` 文件、备份位置和预计影响；不要使用 `-Force` 解决 `-Update` 冲突，不要改写项目拥有的 `AGENTS.md` 区块外内容、`harness.config.json`、项目地图、验证文档或业务源码。等待我确认预览结果；确认后才运行不带 `-WhatIf` 的 `-Update`。更新完成后运行 `scripts/harness-doctor.ps1` 和 `scripts/verify.ps1 -Scope Harness`；只有项目验证配置已确认且实际通过时，才运行并报告 `scripts/verify.ps1 -Scope All`。不要自动安装依赖、启用 Git Hook、修改 CI 或执行部署操作。`
+
+</details>
+
+`-Update` 只更新 Harness 受管文件和 lock 基线，不会自动配置项目构建、测试、依赖或 CI。没有 `harness.lock.json` 的旧安装不能安全推断本地基线，应先报告并选择重新安装或人工迁移。
+
 可选能力：
 
 - **验收脚本索引**：Standard 默认把 `tests/harness/*.ps1` 列入受管索引。新增或删除脚本后运行 `scripts/update-artifact-catalog.ps1`；`verify.ps1 -Scope Harness` 会检查索引是否同步。
@@ -175,13 +188,14 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 
 ## 配置真实验证
 
-在 `harness.config.json` 的 `projectValidation` 中分别配置可执行文件和参数，Harness 才能可靠地运行项目验证命令：
+在 `harness.config.json` 的 `projectValidation` 中分别配置证据类型、可执行文件和参数，Harness 才能可靠地运行项目验证命令：
 
 ```json
 {
   "projectValidation": [
     {
       "name": "Run tests",
+      "kind": "test",
       "executable": "dotnet",
       "arguments": ["test", "MyProject.sln", "--no-restore"]
     }

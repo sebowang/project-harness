@@ -1,4 +1,4 @@
-# Project Harness v1.2.0
+# Project Harness v1.3.0
 
 [中文](README.md) | English
 
@@ -7,7 +7,7 @@
 
 Project Harness is a non-destructive setup for AI-assisted development. It installs only what is missing and never overwrites your existing rules. Codex, Claude Code, and Trae read the same `AGENTS.md` as the single source of rules and share one validation entry point, `verify.ps1`.
 
-Current version: `v1.2.0`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
+Current version: `v1.3.0`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
 
 ## What Problem It Solves
 
@@ -64,7 +64,7 @@ Existing rules and configuration are preserved. `-Force` is used only after your
 Two configuration tasks make the Harness useful for your project:
 
 1. Have the Agent run the read-only `project-onboarding` proposal, review it, and approve it before anything is written.
-2. Fill in `docs/project-map.md` from real source, and configure the actual build, test, lint, or smoke commands under `projectValidation` in `harness.config.json`.
+2. Fill in `docs/project-map.md` from real source, and configure the actual build, test, lint, or smoke commands under `projectValidation` in `harness.config.json`. Mark each command with its evidence `kind`; compiled projects should declare `build` under `readiness.requiredValidationKinds`.
 
 Then run the full check:
 
@@ -72,7 +72,7 @@ Then run the full check:
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 ```
 
-`Standard` requires at least one project validation command. If none can be configured, explain why in `readiness.projectValidationWaiver`; the status then reads `ready with waiver` instead of a normal pass.
+`Standard` requires at least one project validation command. If no command can be configured, or a compiled project has no executable `build` evidence, explain why in `readiness.projectValidationWaiver`; the status then reads `ready with waiver` instead of a normal pass.
 
 ## How to Use It After Installation
 
@@ -157,6 +157,19 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 
 Updates replace only managed files that have not been locally modified since the last install. If both sides changed the same path, a file is missing, or a path conflicts, the update stops before writing; the original files and lock are backed up under `.harness-backup/<timestamp>/`. A file a new version no longer manages is kept by default and marked `ORPHANED`; once you confirm it is not needed and it has not been locally modified, clean it up explicitly with `-Prune`.
 
+### Ask an Agent to Update It
+
+In a target repository that already has Harness installed, give the following natural-language instruction to your Agent:
+
+<details>
+<summary>Expand and copy the update instruction</summary>
+
+> Update Project Harness in the current Git repository. First confirm the repository root, `git status --short`, `harness.lock.json`, and the current Harness version, preserving all existing modifications. Resolve the latest stable Release from GitHub Releases and report the exact version, then clone that fixed version into a system temp directory and run `scripts/initialize-project.ps1 -TargetPath <current repository> -Update -WhatIf` from the clone. Report planned files, locally modified or missing managed files, conflicts, `ORPHANED` files, backup location, and expected impact. Do not use `-Force` to resolve an `-Update` conflict, and do not rewrite content outside the managed `AGENTS.md` block, `harness.config.json`, project map, verification docs, or business source. Wait for my confirmation of the preview; only then run `-Update` without `-WhatIf`. After the update, run `scripts/harness-doctor.ps1` and `scripts/verify.ps1 -Scope Harness`; run and report `scripts/verify.ps1 -Scope All` only when project validation is configured and confirmed. Do not install dependencies, enable Git Hooks, modify CI, or run deployment operations automatically.
+
+</details>
+
+`-Update` changes only Harness-managed files and the lock baseline. It does not configure project builds, tests, dependencies, or CI. If `harness.lock.json` is missing, the local baseline cannot be inferred safely; stop and report whether to reinstall or perform a manual migration.
+
 Optional capabilities:
 
 - **Artifact catalog**: The Standard profile indexes `tests/harness/*.ps1` in a managed README block. Run `scripts/update-artifact-catalog.ps1` after adding or removing scripts; `verify.ps1 -Scope Harness` reports a stale catalog.
@@ -175,13 +188,14 @@ Tool-specific entries only point to the shared workflow; they do not duplicate t
 
 ## Configuring Real Validation
 
-Configure each project validation command as an executable plus its arguments in `harness.config.json`, so the Harness can run it reliably:
+Configure each project validation command as an evidence kind, executable, and arguments in `harness.config.json`, so the Harness can run it reliably:
 
 ```json
 {
   "projectValidation": [
     {
       "name": "Run tests",
+      "kind": "test",
       "executable": "dotnet",
       "arguments": ["test", "MyProject.sln", "--no-restore"]
     }

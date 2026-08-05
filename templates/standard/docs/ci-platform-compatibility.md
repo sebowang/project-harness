@@ -20,6 +20,8 @@ pwsh -NoProfile -File scripts/verify.ps1 -Scope All
 
 `examples/ci/` 属于本 Harness 源仓库的参考资料，不在 `templates/manifest.json` 中，也不会被初始化器安装、更新或写入目标项目。
 
+目标仓库没有 `.github/workflows/`、`.gitlab-ci.yml` 或 `.cnb.yml` 时，Onboarding 应报告“CI 未配置”。这只是平台事实和后续建议，不会被 Harness 结构检查自动判定为失败，也不会因为存在 CNB remote 就假定已有 CNB 消费方。
+
 示例只验证已配置的项目，不包含发布、数据库迁移、云权限、Secrets 或审批步骤。高风险操作必须由目标平台的环境权限、受保护分支、审批与密钥管理机械约束。
 
 ## Onboarding 勘察
