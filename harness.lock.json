@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.3.3",
+    "harnessVersion":  "1.3.4",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "managedFiles":  [
@@ -172,7 +172,7 @@
                          {
                              "path":  "docs/workflows/harness-authoring.md",
                              "ownership":  "managed",
-                             "baselineHash":  "426603765EE6D2E637D018F84CAB5698E3C0DFFC9819BF532DF0BB2D13F9A069"
+                             "baselineHash":  "1CCEE15E7AA00D26D80BC6C7697746A89D6CFE83AB80CE322370FAA9F76A27C7"
                          },
                          {
                              "path":  "docs/workflows/project-handoff.md",
@@ -192,7 +192,7 @@
                          {
                              "path":  "docs/workflows/testing.md",
                              "ownership":  "managed",
-                             "baselineHash":  "8BFD43ED9F7C7F22D21C3256A031096B2E626CCDE9B90920AC20C28D1FA6D5B1"
+                             "baselineHash":  "0C4D62890923B78D96551F2AC40A0CDFE713CC5AAA6F912F95EDD712F6B7319C"
                          },
                          {
                              "path":  "docs/workflows/systematic-debugging.md",
