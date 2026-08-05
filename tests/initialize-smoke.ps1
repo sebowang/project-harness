@@ -52,6 +52,7 @@ try {
         'docs\project-map.md',
         'docs\verification.md',
         'docs\decisions\README.md',
+        'docs\lessons\README.md',
         'docs\agent-compatibility.md',
         'docs\workflows\project-start.md',
         '.agents\skills\project-start\SKILL.md',
@@ -77,6 +78,11 @@ try {
     if ($mergedExistingAgents -notmatch [regex]::Escape('# Existing rules') -or $mergedExistingAgents -notmatch '<!-- PROJECT-HARNESS:BEGIN -->') {
         throw 'Existing AGENTS.md was not preserved and connected through the Harness block.'
     }
+    $managedBlockMatches = [regex]::Matches($mergedExistingAgents, '(?s)<!-- PROJECT-HARNESS:BEGIN -->.*?<!-- PROJECT-HARNESS:END -->')
+    $expectedManagedBlock = [IO.File]::ReadAllText((Join-Path $repositoryRoot 'templates\partials\agents-harness-block.md')).TrimEnd().Replace("`r`n", "`n")
+    if ($managedBlockMatches.Count -ne 1 -or $managedBlockMatches[0].Value.TrimEnd().Replace("`r`n", "`n") -ne $expectedManagedBlock) {
+        throw 'Merged AGENTS.md does not contain exactly the current Harness managed block.'
+    }
 
     $claudeEntry = [IO.File]::ReadAllText((Join-Path $testRoot 'CLAUDE.md')).Trim()
     if ($claudeEntry -ne '@AGENTS.md') {
@@ -88,7 +94,7 @@ try {
         throw 'Trae project rule does not route to AGENTS.md and public workflows.'
     }
 
-    $workflowNames = @('project-start', 'project-onboarding', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff', 'testing', 'systematic-debugging', 'durable-plan')
+    $workflowNames = @('project-start', 'project-onboarding', 'change-plan', 'adversarial-review', 'harness-authoring', 'project-handoff', 'testing', 'systematic-debugging', 'durable-plan', 'knowledge-capture')
     foreach ($workflowName in $workflowNames) {
         $workflowPath = Join-Path $testRoot "docs\workflows\$workflowName.md"
         $codexSkillPath = Join-Path $testRoot ".agents\skills\$workflowName\SKILL.md"
@@ -107,9 +113,27 @@ try {
         }
     }
 
+    $customSkillPath = Join-Path $testRoot '.agents\skills\project-specific\SKILL.md'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $customSkillPath) -Force | Out-Null
+    [IO.File]::WriteAllText($customSkillPath, "---`nname: project-specific`ndescription: Project-owned Codex-only workflow.`n---`n", (New-Object Text.UTF8Encoding($false)))
+    & (Join-Path $testRoot 'scripts\check-harness.ps1')
+    if (-not $?) {
+        throw 'Harness check rejected a project-owned single-tool Skill.'
+    }
+    Remove-Item -LiteralPath (Split-Path -Parent $customSkillPath) -Recurse -Force
+
+    $pairedSkillPath = Join-Path $testRoot '.claude\skills\project-start\SKILL.md'
+    $pairedSkillBytes = [IO.File]::ReadAllBytes($pairedSkillPath)
+    [IO.File]::WriteAllText($pairedSkillPath, "---`nname: project-start`ndescription: Drifted wrapper.`n---`n", (New-Object Text.UTF8Encoding($false)))
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-harness.ps1')
+    [IO.File]::WriteAllBytes($pairedSkillPath, $pairedSkillBytes)
+
     $projectMap = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\project-map.md'))
     if ($projectMap -notmatch 'Smoke Test Project') {
         throw 'Project name placeholder was not replaced.'
+    }
+    if ($projectMap -notmatch [regex]::Escape('Project-owned layout')) {
+        throw 'Generated project map does not explain project-owned directory layouts.'
     }
 
     & (Join-Path $testRoot 'scripts\verify.ps1') -Scope Harness
@@ -239,6 +263,46 @@ try {
     $changePlanWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\change-plan.md'))
     if ($changePlanWorkflow -notmatch [regex]::Escape('expected output') -or $changePlanWorkflow -notmatch [regex]::Escape('unacceptable behavior')) {
         throw 'Generated change plan does not define observable behavior and scope expansion.'
+    }
+    $durablePlanWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\durable-plan.md'))
+    if ($durablePlanWorkflow -notmatch [regex]::Escape('docs/active-plan.md') -or $durablePlanWorkflow -notmatch [regex]::Escape('Active | Blocked | Complete') -or $durablePlanWorkflow -notmatch [regex]::Escape('durable-plan')) {
+        throw 'Generated durable plan workflow does not define mandatory long-task triggers.'
+    }
+    $handoffWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\project-handoff.md'))
+    $projectStartWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\project-start.md'))
+    if ($handoffWorkflow -notmatch [regex]::Escape('docs/handoff.md') -or $projectStartWorkflow -notmatch [regex]::Escape('docs/handoff.md')) {
+        throw 'Generated workflows do not provide a fixed handoff discovery path.'
+    }
+    $knowledgeWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\knowledge-capture.md'))
+    if ($knowledgeWorkflow -notmatch [regex]::Escape('docs/lessons/') -or $knowledgeWorkflow -notmatch [regex]::Escape('AGENTS.md') -or $knowledgeWorkflow -notmatch [regex]::Escape('Skill') -or $knowledgeWorkflow -notmatch [regex]::Escape('accessible-context') -or $knowledgeWorkflow -notmatch [regex]::Escape('discovery-only')) {
+        throw 'Generated knowledge capture workflow does not route durable knowledge and Skill promotion.'
+    }
+    $decisionReadme = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\decisions\README.md'))
+    foreach ($decisionMarker in @('Decision Record', 'DECISION-NNN', 'System Invariant', 'Architecture Decision')) {
+        if ($decisionReadme -notmatch [regex]::Escape($decisionMarker)) {
+            throw "Generated decision guide is missing marker: $decisionMarker"
+        }
+    }
+    $readmeGuides = @(
+        @{ Path = (Join-Path $repositoryRoot 'README.md'); Markers = @('docs/workflows/knowledge-capture.md', 'harness.config.json.projectValidation', 'System Invariant') },
+        @{ Path = (Join-Path $repositoryRoot 'README.en.md'); Markers = @('End-to-End Development Flow', 'Knowledge Capture workflow', 'What Users Must Configure or Confirm') }
+    )
+    foreach ($readmeGuide in $readmeGuides) {
+        $readmeContent = [IO.File]::ReadAllText($readmeGuide.Path)
+        foreach ($readmeMarker in $readmeGuide.Markers) {
+            if ($readmeContent -notmatch [regex]::Escape($readmeMarker)) {
+                throw "Public README is missing user guidance marker '$readmeMarker': $($readmeGuide.Path)"
+            }
+        }
+    }
+    $onboardingWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\project-onboarding.md'))
+    foreach ($projectOwnedDirectory in @('code/', 'src/', 'assets/', 'notes/')) {
+        if ($onboardingWorkflow -notmatch [regex]::Escape($projectOwnedDirectory)) {
+            throw "Generated onboarding workflow does not preserve project-owned directory: $projectOwnedDirectory"
+        }
+    }
+    if ($onboardingWorkflow -notmatch [regex]::Escape('harness.config.json')) {
+        throw 'Generated onboarding workflow does not preserve project-owned source layouts.'
     }
     $manifest = Get-Content -LiteralPath (Join-Path $repositoryRoot 'templates\manifest.json') -Raw | ConvertFrom-Json
     $manifestPaths = @($manifest.files | ForEach-Object { [string]$_.path })

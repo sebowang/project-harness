@@ -18,6 +18,7 @@
 - 保留既有 `AGENTS.md`，需要时用受控区块接入，而不是整份覆盖。
 - 用 `verify.ps1` 统一检查 Harness、项目 readiness 和真实项目验证命令。
 - 对新增的外部验收脚本维护可校验索引，避免“代码加了、文档没同步”。
+- 为 PRD、Decision Record、Reference、Lessons 和唯一长任务计划提供明确路由，不强制项目采用某种源码目录布局。
 - 为 Codex、Claude Code 和 Trae 提供同一套规则源与薄入口。
 - 提供可选的本地 Git Hook 提醒；不会在安装时暗中修改 Git 配置。
 
@@ -114,12 +115,77 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 
 `Standard` 默认要求至少一个项目验证命令。确实没有可运行命令时，可以在 `readiness.projectValidationWaiver` 中记录具体原因；这种状态会报告为 `ready with waiver`，不会伪装成普通验证通过。
 
+## 安装后的完整开发流程
+
+Harness 不是只在初始化时运行一次。正确用法是让每次开发都经过同一条可恢复、可验证的流程：
+
+1. **初始化与接入规则**：先使用 `-WhatIf` 预览；已有 `AGENTS.md` 时，由用户确认是否使用 `-MergeProjectRules` 接入受控区块。
+2. **项目勘察**：让 Agent 执行 `project-onboarding` 的 Proposal 阶段。Agent 从源码和现有文档识别真实目录、模块边界、构建入口、验证命令、已有规则和风险能力，用户确认后才写入项目配置。
+3. **开始任务**：Agent 按 `project-start` 读取 `AGENTS.md`、`docs/project-map.md`、`docs/verification.md`、相关 PRD、Active Decision Record、Reference、Lessons，以及存在时的 `docs/handoff.md`。
+4. **规划变更**：非简单任务使用 `change-plan` 明确目标、范围、不可接受行为和验证方式。项目启用 `durable-plan` 且任务命中跨会话、多阶段、高风险或多模块依赖条件时，先创建或恢复唯一的 `docs/active-plan.md`。
+5. **实施与验证**：Agent 保留既有修改，只做与任务直接相关的变更，并运行风险相称的构建、测试、Lint 或 Harness Check。
+6. **审查与交付**：高风险或共享行为变更使用 `adversarial-review` 检查回归、范围漂移和缺失验证，最后运行 `scripts/verify.ps1 -Scope All`。
+7. **知识沉淀**：用户可以要求 Agent 检查当前可访问会话和仓库证据，先列出值得沉淀的候选；只有用户明确要求记录，或目标已经足够明确时，才写入对应文件。
+8. **跨会话继续**：任务需要交给下一次会话时，使用 `project-handoff` 维护唯一的 `docs/handoff.md`。任务完成后，把长期结论迁移到正式载体，不把交接文件当永久知识库。
+
+```text
+安装预览 -> Onboarding Proposal -> 用户确认项目配置
+         -> Project Start -> Change Plan / Active Plan
+         -> 实施 -> 测试 -> 对抗审查 -> Scope All
+         -> 知识候选 -> 用户确认沉淀 -> 交付或 Handoff
+```
+
+Harness 可以让 Agent 更容易发现规则和恢复上下文，但不能保证模型永远不会遗漏指令。构建、测试、CI、权限和审批仍是重要的机械约束。
+
+## 项目信息应该放在哪里
+
+不要把所有内容都写进 `AGENTS.md`，也不要把一次性经验立即制作成 Skill。Standard 使用以下路由：
+
+| 内容 | 主要位置 | 使用边界 |
+|---|---|---|
+| 必须长期遵守的研发规则 | `AGENTS.md` | 保持简短、稳定；项目专属规则放在 Harness 受控区块外 |
+| 产品目标、范围和验收条件 | `docs/prd/` | 描述用户需要什么，不代替技术决策 |
+| 长期选择和系统不变量 | `docs/decisions/` | 统一使用 Decision Record；用 `Type` 区分 `System Invariant` 与 `Architecture Decision` |
+| 当前架构、模块和接口事实 | `docs/project-map.md`、`docs/reference/` | 必须能从源码、接口或环境复核 |
+| 用户纠正、重复失败和可复用教训 | `docs/lessons/` | 不冒充规则、事实或临时日志 |
+| 已稳定复用的执行流程 | `docs/workflows/` 和对应 Skill | 至少两次独立成功复用，并有清楚的输入、输出和验证方式 |
+| 当前长任务状态 | `docs/active-plan.md` | 只保留一个；小任务不创建空计划 |
+| 跨会话交接状态 | `docs/handoff.md` | 只保留一个；完成后归档或删除 |
+
+详细分类规则见 [Knowledge Capture 工作流](docs/workflows/knowledge-capture.md)、[Decision Record 指南](docs/decisions/README.md) 和 [Lessons 指南](docs/lessons/README.md)。
+
+### 用户可以直接这样说
+
+不需要记关键词或命令格式，使用自然语言即可：
+
+> 检查当前可访问的会话和仓库证据，看有没有值得长期沉淀的内容。先列候选和建议位置，不要修改文件。
+
+> 把刚才确认的兼容性决定记录下来，先判断它应该进入 Decision Record、规则还是 Lessons，再更新正确的文件。
+
+> 判断这套排障流程是否已经适合固化为 Skill；如果还不成熟，说明缺少哪些复用证据，不要强行创建。
+
+Agent 必须说明自己实际能访问哪些会话和文件。无法读取的历史会话不能凭印象总结；仅仅出现“Skill”“决策”等词，也不会触发机械写入。
+
+## 用户需要确认和维护的事项
+
+以下内容不能由通用 Harness 替项目做决定：
+
+- 选择 `Light` 还是 `Standard`，以及是否把 Harness 规则合并进已有 `AGENTS.md`。
+- 审核 `project-onboarding` Proposal，确认模块边界、验证命令、风险能力和知识目录是否符合真实项目。
+- 在 `harness.config.json.projectValidation` 中维护真实可执行的构建、测试、Lint 或 Smoke Check。
+- 决定是否启用 `durable-plan` 等能力，以及是否显式安装本地 Git Hook。
+- 将 `scripts/verify.ps1 -Scope All` 接入项目 CI；本地 Hook 可以跳过，不能代替 CI、权限或审批。
+- 更新 Harness 前先使用 `-Update -WhatIf` 查看计划，处理本地修改冲突和 `ORPHANED` 文件后再执行更新。
+- 对生产发布、数据库迁移、外部消息、付费操作等高影响行为继续使用项目自己的权限、审批和回滚机制。
+
+用户不需要按照 Harness 规定整理源码目录。`code/`、`src/`、`assets/`、`notes/` 等目录继续由目标项目自行维护，Harness 只记录真实布局和责任边界。
+
 ## 初始化级别
 
 | 级别 | 适用场景 | 主要内容 |
 |---|---|---|
 | `Light` | 小型仓库、短期项目、文档项目 | `AGENTS.md`、项目地图、验证指南、统一验证脚本 |
-| `Standard` | 长期维护、多人或 Agent 重复参与的仓库 | Light + ADR/PRD/Reference 路由、Harness 规范、仓库级 Skills、文档漂移检查、验收脚本索引 |
+| `Standard` | 长期维护、多人或 Agent 重复参与的仓库 | Light + Decision Record/PRD/Reference 路由、Harness 规范、仓库级 Skills、文档漂移检查、验收脚本索引 |
 
 不提供自动化 `Full` 模式。生产发布、数据库、基础设施、昂贵操作和机械安全边界必须根据真实项目配置 CI、权限、审批与 Hook，不应由通用模板猜测。
 
@@ -142,6 +208,7 @@ docs/
   prd/README.md
   decisions/README.md
   reference/README.md
+  lessons/README.md
 .agents/skills/
   */SKILL.md
 .claude/skills/
@@ -161,6 +228,8 @@ tests/harness/README.md
 ```
 
 默认不创建 `current-task.md`、`session-state.json`、`session-log.md`、`progress-map.md` 等重复状态文件。跨会话长任务确有需要时，由 `project-handoff` Skill 建立单一交接文件即可。
+
+启用 `durable-plan` 能力后，若任务命中跨会话、多阶段、等待外部输入、高风险或多模块依赖等条件，必须在实施前维护唯一的 `docs/active-plan.md`；小任务不创建空计划。`code/`、`src/`、`assets/`、`notes/` 等目标项目目录由项目自行决定，Harness 只勘察和记录，不创建或搬迁。
 
 ## Agent 兼容方式
 
@@ -224,6 +293,9 @@ powershell -ExecutionPolicy Bypass -File scripts/harness-doctor.ps1
 
 - [设计原则](docs/design-principles.md)
 - [初始化工作流](docs/initialization-workflow.md)
+- [Knowledge Capture 工作流](docs/workflows/knowledge-capture.md)
+- [Decision Record 指南](docs/decisions/README.md)
+- [Lessons 指南](docs/lessons/README.md)
 - [Agent 兼容策略](docs/agent-compatibility.md)
 - [CI 平台兼容性](docs/ci-platform-compatibility.md)
 - [Harness 配置](docs/harness-configuration.md)

@@ -12,6 +12,10 @@ TODO(HARNESS)：记录语言、框架、运行环境和仓库形态。
 |---|---|---|
 | TODO(HARNESS) | TODO(HARNESS) | TODO(HARNESS) |
 
+## Project-owned layout / 项目目录与素材
+
+TODO(HARNESS)：记录源码、测试、素材和临时记录的真实目录及职责。不要因为模板示例猜测目录，也不要为了符合 Harness 移动或重命名项目文件。
+
 ## 模块与职责
 
 | 模块 | 主要位置 | 职责 | 边界与风险 |

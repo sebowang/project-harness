@@ -32,6 +32,18 @@
 
 未增加 `artifactCatalogs` 的旧项目会跳过该检查，不会因小版本更新直接失效。
 
+## 为既有 Standard 项目启用计划与经验沉淀
+
+安全更新可以安装新的 `durable-plan`、`knowledge-capture` 工作流和对应受管 Skill，但不会改写项目拥有的 `AGENTS.md`、`harness.config.json` 或文档目录。旧项目需要人工确认后完成：
+
+1. 在 `harness.config.json.requiredPaths` 增加 `docs/workflows/knowledge-capture.md` 和两个 `knowledge-capture` Skill 路径；需要长期经验目录时再增加 `docs/lessons/README.md`。
+2. 从当前版本的 `templates/standard/docs/lessons/README.md` 创建项目自己的 Lessons 入口，并按项目需要调整说明。
+3. 将 `docs/decisions/README.md` 更新为统一 Decision Record 说明；已有 ADR 文件不需要批量重命名，可在新增或修改时补充 `Type` 和 `Status`。
+4. 需要强制长任务计划时，在 `capabilities` 中加入 `durable-plan`，并把当前受管 Harness 规则区块合并到项目 `AGENTS.md`。
+5. 运行 `scripts/verify.ps1 -Scope Harness`，确认必需路径、工作流和 Skill 入口完整。
+
+Harness 不为旧项目创建或移动 `code/`、`src/`、`assets/`、`notes/` 等项目目录；onboarding 只记录已有布局。
+
 ## 兼容承诺
 
 小版本应保持 schema `1` 和已有模板路径兼容。删除或改变受管文件、配置字段或 Agent 发现路径时，必须提高主版本并在 CHANGELOG 写迁移步骤。
