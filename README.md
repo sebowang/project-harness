@@ -1,4 +1,4 @@
-# Project Harness v1.3.2
+# Project Harness v1.3.3
 
 [中文](README.md) | [English](README.en.md)
 
@@ -7,7 +7,7 @@
 
 Project Harness 是一套非破坏性的 AI 辅助开发初始化工具：默认只创建缺失文件，不覆盖已有规则。Codex、Claude Code 和 Trae 读取同一份 `AGENTS.md` 规则，共用一个 `verify.ps1` 验证入口。
 
-当前版本：`v1.3.2`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
+当前版本：`v1.3.3`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
 
 ## 它解决什么问题
 

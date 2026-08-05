@@ -1,4 +1,4 @@
-# Project Harness v1.3.2
+# Project Harness v1.3.3
 
 [中文](README.md) | English
 
@@ -7,7 +7,7 @@
 
 Project Harness is a non-destructive setup for AI-assisted development. It installs only what is missing and never overwrites your existing rules. Codex, Claude Code, and Trae read the same `AGENTS.md` as the single source of rules and share one validation entry point, `verify.ps1`.
 
-Current version: `v1.3.2`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
+Current version: `v1.3.3`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
 
 ## What Problem It Solves
 
