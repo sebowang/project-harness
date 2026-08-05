@@ -284,8 +284,10 @@ try {
         }
     }
     $readmeGuides = @(
-        @{ Path = (Join-Path $repositoryRoot 'README.md'); Markers = @('docs/workflows/knowledge-capture.md', 'harness.config.json.projectValidation', 'System Invariant') },
-        @{ Path = (Join-Path $repositoryRoot 'README.en.md'); Markers = @('End-to-End Development Flow', 'Knowledge Capture workflow', 'What Users Must Configure or Confirm') }
+        @{ Path = (Join-Path $repositoryRoot 'README.md'); Markers = @('docs/usage-guide.md', '-MergeProjectRules', 'code/') },
+        @{ Path = (Join-Path $repositoryRoot 'README.en.md'); Markers = @('How to Use It After Installation', 'docs/usage-guide.en.md', 'code/') },
+        @{ Path = (Join-Path $repositoryRoot 'docs/usage-guide.md'); Markers = @('docs/active-plan.md', 'System Invariant', 'harness.config.json.projectValidation') },
+        @{ Path = (Join-Path $repositoryRoot 'docs/usage-guide.en.md'); Markers = @('The Agent Workflow', 'System Invariant', 'harness.config.json.projectValidation') }
     )
     foreach ($readmeGuide in $readmeGuides) {
         $readmeContent = [IO.File]::ReadAllText($readmeGuide.Path)

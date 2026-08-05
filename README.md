@@ -2,196 +2,106 @@
 
 [中文](README.md) | [English](README.en.md)
 
-面向 AI 辅助研发的通用项目初始化工具。它把仓库规则、架构事实、长期决策、可复用流程和验证入口放进版本控制，让后续 Agent 会话可以基于项目文件工作，而不是依赖聊天记录。
+> 换一个人、换一个 AI Agent，或者隔一周再打开项目——之前聊清楚的规则、决定和验证方式，全留在聊天记录里，别人接不住。
+> Project Harness 把这些写进仓库，让任何人或任何 Agent 接手时，都能从仓库里恢复上下文，而不是依赖上一段对话。
 
-当前模板同时为 Codex、Claude Code 和 Trae 提供项目入口，并使用 `AGENTS.md` 作为唯一规则事实源。
+Project Harness 是一套非破坏性的 AI 辅助开发初始化工具：默认只创建缺失文件，不覆盖已有规则。Codex、Claude Code 和 Trae 读取同一份 `AGENTS.md` 规则，共用一个 `verify.ps1` 验证入口。
 
-当前发布：`v1.2.0`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
-
-本项目不绑定业务领域、编程语言或应用框架。初始化器使用 PowerShell，适合 Windows 仓库，也可在安装 PowerShell 7 的 macOS/Linux 环境运行。
+当前版本：`v1.2.0`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
 
 ## 它解决什么问题
 
-适合已经有代码、规则和项目经验，但会反复换人、换 Agent 或跨会话继续开发的仓库。它不会替你编写业务架构，也不会猜测构建命令；它提供一个可逐步落地的协作底座：
+AI 辅助开发最大的隐性成本是上下文丢失。上个月你让 Agent 写了接口，这个月换人接手时，对方的第一个问题还是那几个：构建命令是什么、代码放在哪、有没有约定。
 
-- 把规则、项目事实、决策、验证和工作流放进版本控制。
-- 保留既有 `AGENTS.md`，需要时用受控区块接入，而不是整份覆盖。
-- 用 `verify.ps1` 统一检查 Harness、项目 readiness 和真实项目验证命令。
-- 对新增的外部验收脚本维护可校验索引，避免“代码加了、文档没同步”。
-- 为 PRD、Decision Record、Reference、Lessons 和唯一长任务计划提供明确路由，不强制项目采用某种源码目录布局。
-- 为 Codex、Claude Code 和 Trae 提供同一套规则源与薄入口。
-- 提供可选的本地 Git Hook 提醒；不会在安装时暗中修改 Git 配置。
+Project Harness 的做法：
 
-## 设计目标
+- **把上下文留在仓库里**：规则、项目事实、重要决定和验证命令都进版本控制，不依赖任何一段聊天记录。
+- **不破坏已有内容**：默认只创建缺失文件；已有 `AGENTS.md` 时，可以只把 Harness 规则接入受控区块，区块外内容不动。
+- **多工具共用一套规则**：Codex、Claude Code、Trae 都从 `AGENTS.md` / `docs/workflows/` 读取同一份约定。
+- **一个验证入口**：`verify.ps1` 同时检查 Harness 结构、项目准备状态和真实配置的验证命令。
+- **按需渐进**：从 `Light` 开始，项目变复杂后再用 `Standard`；计划、交接和经验记录只在需要时创建。
 
-- 非破坏性：默认只创建缺失文件，不覆盖已有项目规则。
-- 事实优先：模板要求先勘察仓库，不根据目录名猜测架构。
-- 验证闭环：提供统一入口，区分 Harness 完整性检查和项目真实测试。
-- 控制上下文：稳定知识、长期决策、当前验证和重复流程各有明确载体。
-- 渐进采用：提供 `Light` 与 `Standard` 两种初始化级别。
+它不替你设计业务架构，也不猜测构建命令。模板不预设业务领域、语言或框架。初始化器用 PowerShell：Windows 可直接运行，macOS/Linux 安装 PowerShell 7 后也能用。
 
 ## 快速开始
 
-### 复制给 Agent
-
-在目标项目的根目录打开 Codex、Claude Code 或支持终端的 Agent，复制以下指令。它不依赖作者电脑上的绝对路径：Agent 会从 GitHub 获取最新稳定 Release 到自己的临时目录，再把 Harness 安装到当前 Git 仓库。
-
-> 在当前 Git 仓库安装 GitHub 仓库 `sebowang/project-harness` 的最新稳定 Release。先检查当前仓库根目录和 `git status --short`，保留所有已有修改；先从 GitHub Releases 解析最新稳定版本并把实际版本号报告给我，再将该版本克隆到系统临时目录，从克隆目录运行 `scripts/initialize-project.ps1 -TargetPath <当前仓库> -Profile Standard -WhatIf`。默认安装不得覆盖已有文件；如果目标仓库已有 `AGENTS.md`，再用 `-MergeProjectRules -WhatIf` 预览受控区块合并并报告保留范围，确认后使用 `-MergeProjectRules` 执行；如果预览显示受管入口（例如 `CLAUDE.md`）与模板冲突，先报告冲突并等待确认，确认后使用 `-Force` 执行受管文件迁移。不得自动修改业务源码、依赖、部署或 Git 配置；安装后执行 `project-onboarding` 的只读 Proposal 阶段，必须明确报告本地 catalog Hook 是否启用、是否建议启用及冲突风险。不要启用能力或运行外部副作用命令，等待我确认 proposal。
-
-这条指令会安装缺失的 Harness 文件，但会保留已有的项目规则与配置。受管文件迁移只在用户确认后使用 `-Force`；迁移前会备份旧文件并刷新可信基线。后续项目化配置仍必须由用户确认。最新版本解析失败或 Release 不是稳定版本时，应停止并报告，不得退回使用 `main`。
-
-目标仓库已有 `AGENTS.md`，且希望把 Harness 规则接入同一份规则文件时，显式加入 `-MergeProjectRules`。初始化器只新增或刷新 `<!-- PROJECT-HARNESS:BEGIN -->` 与 `<!-- PROJECT-HARNESS:END -->` 之间的受控区块，区块外的项目规则保持不变，并在首次写入前备份原文件。默认安装不会修改已有 `AGENTS.md`。
-
-### 命令行安装
-
-在本仓库根目录运行：
+在目标项目仓库根目录运行，三步完成基础安装：
 
 ```powershell
+# 1. 预览安装计划，不写任何文件
 powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
-  -TargetPath "C:\path\to\your-repository" `
-  -Profile Standard
-```
+  -TargetPath "C:\path\to\your-repository" -Profile Standard -WhatIf
 
-已有项目规则时接入 Harness：
-
-```powershell
+# 2. 确认后执行安装
 powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
-  -TargetPath "C:\path\to\your-repository" `
-  -Profile Standard `
-  -MergeProjectRules
-```
+  -TargetPath "C:\path\to\your-repository" -Profile Standard
 
-PowerShell 7 也可以使用：
-
-```powershell
-pwsh -File scripts/initialize-project.ps1 -TargetPath /path/to/repository -Profile Standard
-```
-
-以后从本仓库拉取新版本后，用同一个初始化器安全维护目标仓库：
-
-```powershell
-# 先预览完整更新计划，不写文件
-powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
-  -TargetPath "C:\path\to\your-repository" -Update -WhatIf
-
-# 确认后执行
-powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
-  -TargetPath "C:\path\to\your-repository" -Update
-```
-
-更新只自动替换 lock 基线后未被项目修改的受管文件。双方修改同一路径、文件缺失或新增受管文件与本地路径碰撞时，整次更新会在写入前停止；成功更新前的文件和 lock 保存在 `.harness-backup/<timestamp>/`。
-
-当新版本不再管理旧文件时，默认保留该文件并报告为 `ORPHANED`，不会阻塞其他更新。确认不再需要且文件仍未被本地修改时，显式清理：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
-  -TargetPath "C:\path\to\your-repository" -Update -Prune
-```
-
-初始化完成后，进入目标仓库执行：
-
-```powershell
+# 3. 检查 Harness 是否就绪
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope Harness
 ```
 
-该命令证明 Harness 已安装且结构可读取，不代表项目已完成配置。初始化器会将新项目报告为 `installed`。
+PowerShell 7 环境改用 `pwsh -File ...`，路径写成 `/path/to/repository`。
 
-也可以在目标仓库直接告诉 Agent：
+**已有 `AGENTS.md` 的项目**：默认不会改动它。希望把 Harness 规则接入同一份文件时，安装追加 `-MergeProjectRules`。初始化器只新增或刷新 `<!-- PROJECT-HARNESS:BEGIN -->` 与 `<!-- PROJECT-HARNESS:END -->` 之间的受控区块，区块外规则保持不变，首次写入前备份原文件。
 
-> 按 `project-onboarding` 工作流勘察并配置这个仓库；先给我 proposal，不要直接写入。
+`verify.ps1 -Scope Harness` 只说明 Harness 已安装且入口可读取，不代表项目能通过真实构建或测试。
 
-Agent 会先只读勘察，列出证据、未知项、验证命令候选和风险能力建议。只有你明确确认 proposal 后，它才会修改项目拥有的文件并运行 doctor 与完整验证。
+### 让 Agent 帮你安装
 
-然后完成两项人工工作：
+在目标仓库打开 Codex、Claude Code 或其他能使用终端的 Agent，把下面这段指令交给它。Agent 会从 GitHub 获取最新稳定 Release 并安装到当前 Git 仓库，不依赖作者电脑上的路径。
 
-1. 根据真实源码填写 `docs/project-map.md`，不要保留推测性描述。
-2. 在 `harness.config.json` 的 `projectValidation` 中配置项目实际可运行的构建、测试、Lint 或 Smoke Check。
+<details>
+<summary>展开并复制完整安装指令</summary>
 
-完成后运行完整检查：
+> 在当前 Git 仓库安装 GitHub 仓库 `sebowang/project-harness` 的最新稳定 Release。先检查当前仓库根目录和 `git status --short`，保留所有已有修改；先从 GitHub Releases 解析最新稳定版本并把实际版本号报告给我，再将该版本克隆到系统临时目录，从克隆目录运行 `scripts/initialize-project.ps1 -TargetPath <当前仓库> -Profile Standard -WhatIf`。默认安装不得覆盖已有文件；如果目标仓库已有 `AGENTS.md`，再用 `-MergeProjectRules -WhatIf` 预览受控区块合并并报告保留范围，确认后使用 `-MergeProjectRules` 执行；如果预览显示受管入口（例如 `CLAUDE.md`）与模板冲突，先报告冲突并等待确认，确认后使用 `-Force` 执行受管文件迁移。不得自动修改业务源码、依赖、部署或 Git 配置；安装后执行 `project-onboarding` 的只读 Proposal 阶段，必须明确报告本地 catalog Hook 是否启用、是否建议启用及冲突风险。不要启用能力或运行外部副作用命令，等待我确认 proposal。
+
+</details>
+
+安装保留已有的项目规则和配置。只有在你确认后才会用 `-Force` 迁移受管文件，迁移前会备份旧文件。找不到稳定 Release 时，Agent 应停止并报告，不能退回使用 `main`。
+
+### 安装后完成项目配置
+
+安装完成后还差两步，Harness 才对你的项目真正有用：
+
+1. 让 Agent 按 `project-onboarding` 工作流以只读方式勘察仓库并给出 Proposal，你确认后它才会写入项目文件。
+2. 根据真实源码填写 `docs/project-map.md`，并在 `harness.config.json` 的 `projectValidation` 中配置项目实际可运行的构建、测试、Lint 或 Smoke Check。
+
+然后运行完整检查：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 ```
 
-`Standard` 默认要求至少一个项目验证命令。确实没有可运行命令时，可以在 `readiness.projectValidationWaiver` 中记录具体原因；这种状态会报告为 `ready with waiver`，不会伪装成普通验证通过。
+`Standard` 至少需要一个项目验证命令。确实没有可运行命令时，可以在 `readiness.projectValidationWaiver` 写明原因；状态会显示为 `ready with waiver`，而不是普通的通过状态。
 
-## 安装后的完整开发流程
+## 装好以后怎么用
 
-Harness 不是只在初始化时运行一次。正确用法是让每次开发都经过同一条可恢复、可验证的流程：
+Harness 不改变你的代码目录，也不规定你怎么写代码。换人、换 Agent 或隔一段时间再继续开发时，大家仍能找到同一套规则、项目事实和验证入口。四种常见场景：
 
-1. **初始化与接入规则**：先使用 `-WhatIf` 预览；已有 `AGENTS.md` 时，由用户确认是否使用 `-MergeProjectRules` 接入受控区块。
-2. **项目勘察**：让 Agent 执行 `project-onboarding` 的 Proposal 阶段。Agent 从源码和现有文档识别真实目录、模块边界、构建入口、验证命令、已有规则和风险能力，用户确认后才写入项目配置。
-3. **开始任务**：Agent 按 `project-start` 读取 `AGENTS.md`、`docs/project-map.md`、`docs/verification.md`、相关 PRD、Active Decision Record、Reference、Lessons，以及存在时的 `docs/handoff.md`。
-4. **规划变更**：非简单任务使用 `change-plan` 明确目标、范围、不可接受行为和验证方式。项目启用 `durable-plan` 且任务命中跨会话、多阶段、高风险或多模块依赖条件时，先创建或恢复唯一的 `docs/active-plan.md`。
-5. **实施与验证**：Agent 保留既有修改，只做与任务直接相关的变更，并运行风险相称的构建、测试、Lint 或 Harness Check。
-6. **审查与交付**：高风险或共享行为变更使用 `adversarial-review` 检查回归、范围漂移和缺失验证，最后运行 `scripts/verify.ps1 -Scope All`。
-7. **知识沉淀**：用户可以要求 Agent 检查当前可访问会话和仓库证据，先列出值得沉淀的候选；只有用户明确要求记录，或目标已经足够明确时，才写入对应文件。
-8. **跨会话继续**：任务需要交给下一次会话时，使用 `project-handoff` 维护唯一的 `docs/handoff.md`。任务完成后，把长期结论迁移到正式载体，不把交接文件当永久知识库。
+| 场景 | 做法 |
+|---|---|
+| 第一次接入项目 | 先用 `-WhatIf` 预览；已有 `AGENTS.md` 时决定是否用 `-MergeProjectRules`。安装后让 Agent 先勘察项目，确认它识别出的代码结构和验证命令。 |
+| 日常开发 | 直接说清需求，例如“帮我实现这个功能，并按项目现有规则验证”。Agent 先读取项目上下文，再实施和验证。 |
+| 复杂或持续较久的任务 | 说“这个任务会持续几天，先建立计划”或“把当前进展交接给下一次会话”。只有跨会话、多阶段或高风险任务才需要维护计划和交接文件。 |
+| 想保留经验或决定 | 说“检查这次讨论有没有值得长期记录的经验，先列候选，不要直接写文件”。确认后 Agent 才会把结论放进正确的项目文档。 |
 
-```text
-安装预览 -> Onboarding Proposal -> 用户确认项目配置
-         -> Project Start -> Change Plan / Active Plan
-         -> 实施 -> 测试 -> 对抗审查 -> Scope All
-         -> 知识候选 -> 用户确认沉淀 -> 交付或 Handoff
-```
-
-Harness 可以让 Agent 更容易发现规则和恢复上下文，但不能保证模型永远不会遗漏指令。构建、测试、CI、权限和审批仍是重要的机械约束。
-
-## 项目信息应该放在哪里
-
-不要把所有内容都写进 `AGENTS.md`，也不要把一次性经验立即制作成 Skill。Standard 使用以下路由：
-
-| 内容 | 主要位置 | 使用边界 |
-|---|---|---|
-| 必须长期遵守的研发规则 | `AGENTS.md` | 保持简短、稳定；项目专属规则放在 Harness 受控区块外 |
-| 产品目标、范围和验收条件 | `docs/prd/` | 描述用户需要什么，不代替技术决策 |
-| 长期选择和系统不变量 | `docs/decisions/` | 统一使用 Decision Record；用 `Type` 区分 `System Invariant` 与 `Architecture Decision` |
-| 当前架构、模块和接口事实 | `docs/project-map.md`、`docs/reference/` | 必须能从源码、接口或环境复核 |
-| 用户纠正、重复失败和可复用教训 | `docs/lessons/` | 不冒充规则、事实或临时日志 |
-| 已稳定复用的执行流程 | `docs/workflows/` 和对应 Skill | 至少两次独立成功复用，并有清楚的输入、输出和验证方式 |
-| 当前长任务状态 | `docs/active-plan.md` | 只保留一个；小任务不创建空计划 |
-| 跨会话交接状态 | `docs/handoff.md` | 只保留一个；完成后归档或删除 |
-
-详细分类规则见 [Knowledge Capture 工作流](docs/workflows/knowledge-capture.md)、[Decision Record 指南](docs/decisions/README.md) 和 [Lessons 指南](docs/lessons/README.md)。
-
-### 用户可以直接这样说
-
-不需要记关键词或命令格式，使用自然语言即可：
-
-> 检查当前可访问的会话和仓库证据，看有没有值得长期沉淀的内容。先列候选和建议位置，不要修改文件。
-
-> 把刚才确认的兼容性决定记录下来，先判断它应该进入 Decision Record、规则还是 Lessons，再更新正确的文件。
-
-> 判断这套排障流程是否已经适合固化为 Skill；如果还不成熟，说明缺少哪些复用证据，不要强行创建。
-
-Agent 必须说明自己实际能访问哪些会话和文件。无法读取的历史会话不能凭印象总结；仅仅出现“Skill”“决策”等词，也不会触发机械写入。
-
-## 用户需要确认和维护的事项
-
-以下内容不能由通用 Harness 替项目做决定：
-
-- 选择 `Light` 还是 `Standard`，以及是否把 Harness 规则合并进已有 `AGENTS.md`。
-- 审核 `project-onboarding` Proposal，确认模块边界、验证命令、风险能力和知识目录是否符合真实项目。
-- 在 `harness.config.json.projectValidation` 中维护真实可执行的构建、测试、Lint 或 Smoke Check。
-- 决定是否启用 `durable-plan` 等能力，以及是否显式安装本地 Git Hook。
-- 将 `scripts/verify.ps1 -Scope All` 接入项目 CI；本地 Hook 可以跳过，不能代替 CI、权限或审批。
-- 更新 Harness 前先使用 `-Update -WhatIf` 查看计划，处理本地修改冲突和 `ORPHANED` 文件后再执行更新。
-- 对生产发布、数据库迁移、外部消息、付费操作等高影响行为继续使用项目自己的权限、审批和回滚机制。
+有几件事仍由项目自己决定：真实可运行的构建/测试命令、是否合并已有规则、是否启用本地 Hook，以及生产操作的权限、审批和回滚方式。Harness 不能替代测试、CI、权限或审批。
 
 用户不需要按照 Harness 规定整理源码目录。`code/`、`src/`、`assets/`、`notes/` 等目录继续由目标项目自行维护，Harness 只记录真实布局和责任边界。
 
+想了解完整机制、文件放在哪里或每个工作流何时生效，请阅读 [详细使用指南](docs/usage-guide.md)。
+
 ## 初始化级别
 
-| 级别 | 适用场景 | 主要内容 |
+| 级别 | 适用场景 | 包含内容 |
 |---|---|---|
 | `Light` | 小型仓库、短期项目、文档项目 | `AGENTS.md`、项目地图、验证指南、统一验证脚本 |
-| `Standard` | 长期维护、多人或 Agent 重复参与的仓库 | Light + Decision Record/PRD/Reference 路由、Harness 规范、仓库级 Skills、文档漂移检查、验收脚本索引 |
+| `Standard` | 长期项目，或多人和多个 Agent 会反复接手的仓库 | Light + 工作流、Skill、需求、决定、经验记录、文档检查、验收脚本索引、可选 Hook |
 
-不提供自动化 `Full` 模式。生产发布、数据库、基础设施、昂贵操作和机械安全边界必须根据真实项目配置 CI、权限、审批与 Hook，不应由通用模板猜测。
+没有通用的自动化 `Full` 模式。生产发布、数据库、基础设施和付费操作等高影响事项，仍要按真实项目配置 CI、权限、审批和 Hook。
 
-## 生成结构
-
-Standard 模式会补充以下结构：
+<details>
+<summary>Standard 模式生成的结构</summary>
 
 ```text
 AGENTS.md
@@ -227,11 +137,33 @@ tests/harness/README.md
 .githooks/pre-commit
 ```
 
-默认不创建 `current-task.md`、`session-state.json`、`session-log.md`、`progress-map.md` 等重复状态文件。跨会话长任务确有需要时，由 `project-handoff` Skill 建立单一交接文件即可。
+</details>
 
-启用 `durable-plan` 能力后，若任务命中跨会话、多阶段、等待外部输入、高风险或多模块依赖等条件，必须在实施前维护唯一的 `docs/active-plan.md`；小任务不创建空计划。`code/`、`src/`、`assets/`、`notes/` 等目标项目目录由项目自行决定，Harness 只勘察和记录，不创建或搬迁。
+小任务不需要创建计划或交接文件。跨会话长任务才维护一个交接文件；启用 `durable-plan` 后，命中跨会话、多阶段、高风险或多模块依赖条件的任务才维护一个 `docs/active-plan.md`。
 
-## Agent 兼容方式
+## 更新与维护
+
+更新 Harness 用同一个初始化器，先预览后执行：
+
+```powershell
+# 先预览完整更新计划，不写文件
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\your-repository" -Update -WhatIf
+
+# 确认后执行
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\your-repository" -Update
+```
+
+更新只替换自上次安装后未被本地修改的受管文件。出现双方都改过同一路径、文件缺失或路径冲突时，更新在写入前停止；原文件和 lock 会备份到 `.harness-backup/<timestamp>/`。新版本不再管理的旧文件默认保留并标记为 `ORPHANED`，确认不再需要且未被本地修改时，用 `-Prune` 显式清理。
+
+可选能力：
+
+- **验收脚本索引**：Standard 默认把 `tests/harness/*.ps1` 列入受管索引。新增或删除脚本后运行 `scripts/update-artifact-catalog.ps1`；`verify.ps1 -Scope Harness` 会检查索引是否同步。
+- **本地 pre-commit Hook**：`scripts/install-git-hooks.ps1`，`-Uninstall` 卸载。只在 `core.hooksPath` 未配置或已为 `.githooks` 时工作，不覆盖项目已有 Hook；初始化不会自动安装，CI 仍应运行 `scripts/verify.ps1 -Scope All`。
+- **只读诊断**：`scripts/harness-status.ps1` 和 `scripts/harness-doctor.ps1`。
+
+## Agent 兼容
 
 | 工具 | 自动入口 | 公共工作流入口 |
 |---|---|---|
@@ -239,11 +171,11 @@ tests/harness/README.md
 | Claude Code | `CLAUDE.md` 导入 `AGENTS.md`、`.claude/skills/` | `docs/workflows/` |
 | Trae | `.trae/rules/project-harness.md` 路由到 `AGENTS.md` | `docs/workflows/` |
 
-各工具专属 Skill 只是薄入口，不复制完整规则。详细设计见 [Agent 兼容策略](docs/agent-compatibility.md)。
+各工具的 Skill 入口只负责找到公共工作流，不复制完整规则。详细说明见 [Agent 兼容策略](docs/agent-compatibility.md)。
 
 ## 配置真实验证
 
-`harness.config.json` 使用结构化命令，避免把任意字符串交给 `Invoke-Expression`：
+在 `harness.config.json` 的 `projectValidation` 中分别配置可执行文件和参数，Harness 才能可靠地运行项目验证命令：
 
 ```json
 {
@@ -257,42 +189,13 @@ tests/harness/README.md
 }
 ```
 
-配置后运行：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
-```
-
-## 验收脚本索引与可选 Hook
-
-Standard 默认把 `tests/harness/*.ps1` 登记为一个 artifact catalog。新增或删除验收脚本后更新 README 中的受管索引：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/update-artifact-catalog.ps1
-```
-
-`verify.ps1 -Scope Harness` 会检查索引是否同步。README 中标记区块之外的项目说明不会被改写。
-
-需要更早反馈时，可显式安装仓库本地 pre-commit hook：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
-powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1 -Uninstall
-```
-
-安装器只在 `core.hooksPath` 未配置或已为 `.githooks` 时工作，不覆盖项目已有 Hook。初始化 Harness 时不会自动安装；Hook 可以被绕过，因此 CI 仍应运行 `scripts/verify.ps1 -Scope All`。
-
-只读诊断：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/harness-status.ps1
-powershell -ExecutionPolicy Bypass -File scripts/harness-doctor.ps1
-```
+配置后运行 `scripts/verify.ps1 -Scope All` 做完整检查。
 
 ## 原则与工作流
 
 - [设计原则](docs/design-principles.md)
 - [初始化工作流](docs/initialization-workflow.md)
+- [详细使用指南](docs/usage-guide.md)
 - [Knowledge Capture 工作流](docs/workflows/knowledge-capture.md)
 - [Decision Record 指南](docs/decisions/README.md)
 - [Lessons 指南](docs/lessons/README.md)
