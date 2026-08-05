@@ -285,7 +285,7 @@ try {
     }
     $readmeGuides = @(
         @{ Path = (Join-Path $repositoryRoot 'README.md'); Markers = @('docs/usage-guide.md', '-MergeProjectRules', 'code/') },
-        @{ Path = (Join-Path $repositoryRoot 'README.en.md'); Markers = @('How to Use It After Installation', 'docs/usage-guide.en.md', 'code/') },
+        @{ Path = (Join-Path $repositoryRoot 'README.en.md'); Markers = @('How to Use It After Installation', 'docs/usage-guide.en.md', 'code/', 'Ask an Agent to Update It') },
         @{ Path = (Join-Path $repositoryRoot 'docs/usage-guide.md'); Markers = @('docs/active-plan.md', 'System Invariant', 'harness.config.json.projectValidation') },
         @{ Path = (Join-Path $repositoryRoot 'docs/usage-guide.en.md'); Markers = @('The Agent Workflow', 'System Invariant', 'harness.config.json.projectValidation') }
     )
@@ -330,6 +330,7 @@ try {
     $config.projectValidation = @(
         [pscustomobject]@{
             name = 'Smoke project command'
+            kind = 'smoke'
             executable = [IO.Path]::GetFileNameWithoutExtension($powerShellExecutable)
             arguments = @('-NoProfile', '-Command', "Write-Output 'Project validation passed.'")
         }
@@ -351,6 +352,20 @@ try {
     if (-not $?) {
         throw 'Doctor failed for a ready Harness.'
     }
+
+    $readyConfig = [IO.File]::ReadAllText($configPath)
+    $evidenceConfig = $readyConfig | ConvertFrom-Json
+    $evidenceConfig.readiness.requiredValidationKinds = @('build')
+    $evidenceConfig.readiness.projectValidationWaiver = $null
+    $evidenceConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-readiness.ps1')
+    $evidenceConfig.readiness.projectValidationWaiver = 'Build toolchain is unavailable on this workstation; smoke evidence remains available.'
+    $evidenceConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    & (Join-Path $testRoot 'scripts\verify.ps1') -Scope All
+    if (-not $?) {
+        throw 'Readiness waiver did not allow missing build evidence during full verification.'
+    }
+    [IO.File]::WriteAllText($configPath, $readyConfig, (New-Object Text.UTF8Encoding($false)))
 
     New-Item -ItemType Directory -Path $updateSourceRoot -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'scripts') -Destination $updateSourceRoot -Recurse
@@ -518,6 +533,11 @@ try {
     & (Join-Path $lightRoot 'scripts\verify.ps1') -Scope Harness
     if (-not $?) {
         throw 'Light harness verification failed.'
+    }
+    $lightAgents = [IO.File]::ReadAllText((Join-Path $lightRoot 'AGENTS.md'))
+    $lightBlockMatches = [regex]::Matches($lightAgents, '(?s)<!-- PROJECT-HARNESS:BEGIN -->.*?<!-- PROJECT-HARNESS:END -->')
+    if ($lightBlockMatches.Count -ne 1 -or $lightBlockMatches[0].Value.TrimEnd().Replace("`r`n", "`n") -ne $expectedManagedBlock) {
+        throw 'Generated Light AGENTS.md does not contain the current Harness managed block.'
     }
 
     New-Item -ItemType Directory -Path $migrationRoot -Force | Out-Null

@@ -82,6 +82,17 @@ if ($null -eq $readinessProperty -or $null -eq $readinessProperty.Value) {
     if ($null -eq $waiverProperty -or ($null -ne $waiverProperty.Value -and $waiverProperty.Value -isnot [string])) {
         $errors.Add('readiness.projectValidationWaiver must be a string or null')
     }
+    $requiredKindsProperty = $readiness.PSObject.Properties['requiredValidationKinds']
+    if ($null -ne $requiredKindsProperty -and $requiredKindsProperty.Value -isnot [System.Array]) {
+        $errors.Add('readiness.requiredValidationKinds must be an array when present')
+    }
+    if ($null -ne $requiredKindsProperty) {
+        foreach ($kind in @($requiredKindsProperty.Value)) {
+            if ([string]$kind -notin @('build', 'test', 'lint', 'smoke', 'custom')) {
+                $errors.Add("Unsupported required validation kind: $kind")
+            }
+        }
+    }
 }
 
 foreach ($relativePath in $config.requiredPaths) {
@@ -137,6 +148,10 @@ foreach ($check in @($config.projectValidation)) {
     }
     if ($null -eq $check.PSObject.Properties['arguments'] -or $check.arguments -isnot [System.Array]) {
         $errors.Add("Project validation arguments must be an array: $($check.name)")
+    }
+    $kindProperty = $check.PSObject.Properties['kind']
+    if ($null -ne $kindProperty -and [string]$kindProperty.Value -notin @('build', 'test', 'lint', 'smoke', 'custom')) {
+        $errors.Add("Unsupported project validation kind: $($check.kind)")
     }
 }
 

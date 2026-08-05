@@ -32,6 +32,15 @@
 
 未增加 `artifactCatalogs` 的旧项目会跳过该检查，不会因小版本更新直接失效。
 
+## 从 1.2.x 配置真实构建与测试证据
+
+`-Update` 会带来新的验证类型和 readiness 规则，但不会替目标项目猜测或写入构建命令。升级后：
+
+1. 检查 onboarding 根据仓库构建信号给出的提示。
+2. 在 `harness.config.json.projectValidation` 中登记项目实际可运行的 `build`、`test`、`lint`、`smoke` 或 `custom` 命令，并在 `readiness.requiredValidationKinds` 中声明门槛。
+3. 如果当前环境确实无法构建，使用带理由、范围和复查条件的 `projectValidationWaiver`，不要用 Harness 自检替代业务构建证据。
+4. 运行 `scripts/verify.ps1 -Scope Harness`；配置并确认项目验证后，再运行 `scripts/verify.ps1 -Scope All`。
+
 ## 为既有 Standard 项目启用计划与经验沉淀
 
 安全更新可以安装新的 `durable-plan`、`knowledge-capture` 工作流和对应受管 Skill，但不会改写项目拥有的 `AGENTS.md`、`harness.config.json` 或文档目录。旧项目需要人工确认后完成：

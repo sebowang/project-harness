@@ -73,7 +73,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 
 1. 在 `docs/project-map.md` 记录已验证入口、模块、依赖方向和风险。
 2. 在 `docs/verification.md` 记录变更类型到验证证据的映射。
-3. 在 `harness.config.json` 配置实际可执行的项目验证命令。
+3. 在 `harness.config.json` 配置实际可执行的项目验证命令，为每条命令标注 `kind`，并按项目类型填写 `readiness.requiredValidationKinds`。
 4. 删除所有 `TODO(HARNESS)` 标记。
 5. 运行 Harness 检查和项目验证。
 6. 分别在实际使用的 Agent 中确认规则入口已加载。
@@ -82,7 +82,7 @@ powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
 
 初始化器完成文件写入后，项目处于 `installed` 状态。Standard 安装输出会明确提示 catalog Hook 尚未启用及安装命令；只有用户明确同意后才运行该命令。只有 `scripts/verify.ps1 -Scope All` 通过后，项目才处于 `ready`；使用项目验证豁免时应报告为 `ready with waiver`。
 
-`Standard` 默认要求真实项目验证命令。项目确实不存在可执行验证时，在 `harness.config.json` 的 `readiness.projectValidationWaiver` 中记录具体原因，不得使用空字符串或笼统的“暂不需要”。
+`Standard` 默认要求真实项目验证命令。对编译型项目，缺少 `build` 证据时必须记录具体的 `readiness.projectValidationWaiver`，不得使用 Harness Smoke Test 冒充构建，也不得使用空字符串或笼统的“暂不需要”。
 
 ## 阶段五：验证
 

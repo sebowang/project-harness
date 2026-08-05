@@ -6,12 +6,12 @@
 
 ## Proposal
 
-1. 只读检查规则文件、Git 状态、源码入口、现有源码、素材与临时记录目录、构建配置、测试、CI、模块文档和外部依赖。
+1. 只读检查规则文件、Git 状态、源码入口、现有源码、素材与临时记录目录、构建配置、测试、CI、模块文档和外部依赖。没有 CI 配置也要明确记录为“未配置”，不把它当作 Harness 失败或自动补齐目标平台。
    读取 Git remote 时只记录脱敏后的 host；识别 GitHub Actions（`.github/workflows/`）、GitLab CI（`.gitlab-ci.yml`）、CNB（`.cnb.yml`）或未知平台，并只列出文件路径和可观察验证入口。
 2. 将结论分为“已验证事实”“推断”“未知项”，每项事实给出文件路径或命令证据。
-3. 提出对 `AGENTS.md`、`docs/project-map.md`、`docs/verification.md` 和 `harness.config.json` 的精确修改，并列出 PRD、Decision Record、Reference、Lessons、临时 notes 和 Skill 的现有位置或建议路由。
+3. 提出对 `AGENTS.md`、`docs/project-map.md`、`docs/verification.md` 和 `harness.config.json` 的精确修改，并列出 PRD、Decision Record、Reference、Lessons、临时 notes 和 Skill 的现有位置或建议路由。已有治理规则与 Harness 工作流重叠时，保留项目规则为事实源，只通过受管区块和入口路由接入，不复制第二份正文。
    目标项目的 `code/`、`src/`、`assets/`、`notes/` 等目录属于项目所有；只记录真实用途，不创建、移动、重命名或强制统一布局。
-4. 验证命令使用 `executable + arguments`；只提出仓库中已有证据支持的命令。已有 CI 只作为候选证据，不自动复制、迁移或执行其部署步骤。
+4. 验证命令使用 `executable + arguments`，并逐条标注 `kind`（`build`、`test`、`lint`、`smoke` 或 `custom`）。发现 `.sln`、`.csproj`、`package.json`、`pyproject.toml`、`pom.xml`、`build.gradle`、`Cargo.toml` 或 `CMakeLists.txt` 等构建信号时，Proposal 必须明确提醒“构建验证尚未配置”或给出已有构建证据；根据项目类型提出 `readiness.requiredValidationKinds`，由用户选择补充 `build` 检查或记录具体 waiver。不能用 Harness 自身脚本或文档检查替代 `build`，也不能仅凭文件名猜测实际命令。已有 CI 只作为候选证据，不自动复制、迁移或执行其部署步骤。
 5. 单独列出数据库、部署、权限、生产数据和昂贵操作风险。可以建议能力，但不得替用户批准。
    可选能力说明见 `docs/capabilities.md`；小项目默认保持空数组。
    如果仓库存在跨会话、多阶段、等待外部输入、高风险变更或多个模块的先后依赖，在 proposal 中建议是否启用 `durable-plan`，并说明命中哪些触发条件。

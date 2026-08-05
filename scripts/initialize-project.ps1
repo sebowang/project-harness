@@ -465,6 +465,7 @@ if (-not (Test-Path -LiteralPath $configPath)) {
         capabilities = @()
         readiness = [ordered]@{
             requireProjectValidation = ($Profile -eq 'Standard')
+            requiredValidationKinds = @()
             projectValidationWaiver = $null
         }
     }

@@ -18,8 +18,8 @@ AGENTS.md <- CLAUDE.md   +-> Claude: .claude/skills/*/SKILL.md ----+-> docs/work
 - `CLAUDE.md`：默认只包含 `@AGENTS.md`；已有项目也可以保留经过验证、确实指向 `AGENTS.md` 的符号链接。
 - `docs/workflows/`：工具中立的完整工作流程。
 - `docs/lessons/`：项目长期经验的建议落点；Skill 只负责流程，不复制其中的项目事实。
-- `.agents/skills/`：Codex 自动发现入口，只引用公共工作流。
-- `.claude/skills/`：Claude Code 自动发现入口，只引用公共工作流。
+- `.agents/skills/`：Codex 自动发现入口，只引用公共工作流；Harness 管理的入口不受项目自有 Skill 晋级门槛限制。
+- `.claude/skills/`：Claude Code 自动发现入口，只引用公共工作流；Harness 管理的入口不受项目自有 Skill 晋级门槛限制。
 - `.trae/rules/project-harness.md`：Trae 的项目规则发现入口，只路由到 `AGENTS.md` 和公共工作流。
 
 ## 为什么默认使用导入文件
@@ -35,7 +35,7 @@ Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AG
 1. `AGENTS.md` 和 `CLAUDE.md` 同时生成。
 2. `CLAUDE.md` 导入或链接到 `AGENTS.md`，Trae 规则入口指向 `AGENTS.md` 和 `docs/workflows/`。
 3. 十个公共工作流存在。
-4. Codex 与 Claude Code 的 Harness 受管同名 Skill 入口内容一致，并指向同名公共工作流；项目自行维护的单工具 Skill 不受此限制。
+4. Codex 与 Claude Code 的 Harness 受管同名 Skill 入口内容一致，并指向同名公共工作流；项目自行维护的单工具 Skill 不受此限制。项目自有 Skill 仍应按稳定复用门槛晋级，不因 Harness 安装而自动创建。
 5. Harness 检查验证这些路径仍在 `requiredPaths` 中。
 
 工具升级后仍建议分别执行一次可观察测试：启动新会话，要求工具复述项目完成标准和验证入口，并确认它能定位 `docs/workflows/project-start.md`。这比仅检查文件存在更接近真实运行环境。

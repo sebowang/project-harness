@@ -23,7 +23,7 @@
 - `durable-plan.md`
 - `knowledge-capture.md`
 
-Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/skills/` 自动发现入口。两个目录中的 Harness 受管同名 Skill 内容必须一致，且只引用上述公共流程；项目自行维护的单工具 Skill 不受此限制。Trae 的 `.trae/rules/` 入口同样只负责路由，不复制规则正文。
+Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/skills/` 自动发现入口。两个目录中的 Harness 受管同名 Skill 内容必须一致，且只引用上述公共流程；这些受管入口不受项目自有 Skill 晋级门槛限制。项目自行维护的单工具 Skill 不受配对限制，但仍应在稳定复用后再沉淀。Trae 的 `.trae/rules/` 入口同样只负责路由，不复制规则正文。
 
 ## 运行确认
 
