@@ -6,12 +6,12 @@ Standard 只提供能力入口，不默认启用额外状态、依赖或外部�
 
 | 能力 | 适用场景 | 确认后应留下的项目证据 |
 |---|---|---|
-| `durable-plan` | 长时间、跨会话、多阶段任务 | 一个 `docs/active-plan.md`，包含目标、已完成、下一步、验证、风险和阻塞；完成后归档或删除 |
+| `durable-plan` | 跨会话、多阶段、等待外部输入、高风险或多模块有先后依赖的任务 | 命中触发条件时使用一个 `docs/active-plan.md`；完成后归档或删除 |
 | `architecture-checks` | 多模块、共享契约或依赖方向容易回归 | 项目自己的依赖/契约检查和 CI 入口；不能只写一段说明 |
 | `database-risk` | 迁移、批量写入、恢复或生产数据 | 真实迁移前检查、备份/恢复演练和隔离环境证据 |
 | `deployment-risk` | 有发布环境、审批和回滚要求 | CI/CD 检查、审批边界、发布记录和可验证回滚路径 |
 
-`harness.config.json` 的 `capabilities` 是项目选择的标识数组。确认启用 `durable-plan` 后，使用 `docs/workflows/durable-plan.md` 维护唯一的 `docs/active-plan.md`；未启用时不创建它。例如：
+`harness.config.json` 的 `capabilities` 是项目选择的标识数组。确认启用 `durable-plan` 后，按 `docs/workflows/durable-plan.md` 的明确触发条件维护唯一的 `docs/active-plan.md`；能力启用但当前任务未命中条件时不创建空计划，未启用时不得静默启用。例如：
 
 ```json
 {

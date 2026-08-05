@@ -195,6 +195,39 @@ foreach ($relativeSkillRoot in $skillRoots) {
     }
 }
 
+function Get-NormalizedSkillContent {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    return ((Get-Content -LiteralPath $Path -Raw) -replace "`r`n?", "`n").TrimEnd()
+}
+
+$managedFilesByPath = @{}
+foreach ($managedFile in @($lock.managedFiles)) {
+    $managedFilesByPath[([string]$managedFile.path).Replace('\', '/')] = [string]$managedFile.ownership
+}
+
+foreach ($codexManagedPath in @($managedFilesByPath.Keys | Where-Object {
+    $managedFilesByPath[$_] -eq 'managed' -and $_ -like '.agents/skills/*/SKILL.md'
+})) {
+    $claudeManagedPath = $codexManagedPath -replace '^\.agents/skills/', '.claude/skills/'
+    if (-not $managedFilesByPath.ContainsKey($claudeManagedPath) -or $managedFilesByPath[$claudeManagedPath] -ne 'managed') {
+        continue
+    }
+
+    $codexSkillPath = Get-CheckedRepositoryPath -RelativePath $codexManagedPath
+    $claudeSkillPath = Get-CheckedRepositoryPath -RelativePath $claudeManagedPath
+    if ($null -eq $codexSkillPath -or $null -eq $claudeSkillPath -or
+        -not (Test-Path -LiteralPath $codexSkillPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $claudeSkillPath -PathType Leaf)) {
+        $errors.Add("Harness-managed Skill wrapper is missing: $codexManagedPath or $claudeManagedPath")
+        continue
+    }
+
+    if ((Get-NormalizedSkillContent -Path $codexSkillPath) -ne (Get-NormalizedSkillContent -Path $claudeSkillPath)) {
+        $errors.Add("Harness-managed Skill wrappers differ: $codexManagedPath and $claudeManagedPath")
+    }
+}
+
 if ($errors.Count -gt 0) {
     foreach ($message in $errors) {
         Write-Host "FAIL  $message" -ForegroundColor Red

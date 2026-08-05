@@ -14,6 +14,8 @@ TODO(HARNESS)：用两到三句话说明项目服务对象、核心能力和明�
 2. `docs/project-map.md`。
 3. 与任务相关的需求、决策、参考资料和模块 README。
 
+Standard 项目还应按任务需要读取 `docs/lessons/`，并检查 `harness.config.json` 的 `durable-plan` 能力和对应触发条件。
+
 若文档与代码冲突，先确认哪一项代表当前事实；不得静默选择更方便的解释。
 
 ## 变更规则
@@ -21,6 +23,7 @@ TODO(HARNESS)：用两到三句话说明项目服务对象、核心能力和明�
 - 实施前确认目标、影响范围和验收路径，区分已验证事实与假设。
 - 采用最小有效修改，不做无关重构、格式化或清理。
 - 保留工作树中已有的用户修改，不覆盖或回退无关内容。
+- 不因为 Harness 模板改变目标项目的源码、素材或临时记录布局；`code/`、`src/`、`assets/`、`notes/` 等目录由项目自行决定并由项目地图记录。
 - 不根据目录名猜测架构、公共契约或运行时行为。
 - 未经明确批准，不新增依赖、改变公共接口或执行破坏性操作。
 - 发现任务范围显著扩大时，暂停并重新确认方案。
@@ -42,9 +45,10 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 
 - `docs/project-map.md`：当前架构事实、模块边界、依赖和验收入口。
 - `docs/verification.md`：变更类型与验证证据的映射。
+- `docs/lessons/`：Standard 模式下记录可复用的用户纠正、重复失败根因和实施经验。
 - `docs/workflows/`：工具中立的可复用工作流程；Standard 模式下由各工具入口按需读取。
 
-TODO(HARNESS)：Standard 模式下补充 PRD、ADR、Reference 与 Harness 的项目具体规则。
+TODO(HARNESS)：Standard 模式下补充 PRD、Decision Record、Reference、Lessons、durable-plan 与 Harness 的项目具体规则。
 
 ## 公共工作流
 
@@ -59,9 +63,10 @@ Standard 模式提供：
 - `docs/workflows/testing.md`
 - `docs/workflows/systematic-debugging.md`
 - `docs/workflows/durable-plan.md`（仅确认启用 `durable-plan` 后使用）
+- `docs/workflows/knowledge-capture.md`
 
 当工具不能自动发现 Skill 时，直接读取并执行对应工作流。
 
 ## 完成标准
 
-只有在实现、验证和必要文档同步完成后，才能声称任务完成。无法运行检查时，明确记录原因、风险和建议的后续验证。
+只有在实现、验证、必要文档同步和知识沉淀判断完成后，才能声称任务完成。无法运行检查时，明确记录原因、风险和建议的后续验证。

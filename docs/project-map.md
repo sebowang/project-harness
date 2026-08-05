@@ -12,6 +12,10 @@ PowerShell 脚本仓库，使用 JSON、Markdown 和 GitHub Actions；初始化�
 |---|---|---|
 | 初始化器 | `scripts/initialize-project.ps1` | 安装、预览和安全更新模板 | Windows PowerShell 5.1 / PowerShell 7 Smoke Test |
 
+## Project-owned layout / 项目目录与素材
+
+本仓库的源码、测试、文档和临时记录布局由本仓库自身决定；通用 Harness 只读取并记录目标项目的真实布局，不创建或移动 `code/`、`src/`、`assets/`、`notes/` 等目录。
+
 ## 模块与职责
 
 | 模块 | 主要位置 | 职责 | 边界与风险 |

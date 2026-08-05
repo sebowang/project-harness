@@ -2,6 +2,8 @@ $ErrorActionPreference = 'Stop'
 
 $hasFailure = $false
 
+Write-Host 'Doctor scope: Harness structure, managed-file status, readiness, and optional catalog Hook state.' -ForegroundColor DarkCyan
+
 foreach ($scriptName in @('check-harness.ps1', 'harness-status.ps1', 'check-readiness.ps1')) {
     Write-Host "== $scriptName =="
     & (Join-Path $PSScriptRoot $scriptName)

@@ -3,7 +3,7 @@
 ## 规则入口
 
 - Codex 自动读取 `AGENTS.md`。
-- Claude Code 通过根目录 `CLAUDE.md` 中的 `@AGENTS.md` 导入同一规则。
+- Claude Code 默认通过根目录 `CLAUDE.md` 中的 `@AGENTS.md` 导入同一规则；已有项目可以保留确实指向 `AGENTS.md` 的符号链接。
 - Trae 从 `.trae/rules/project-harness.md` 发现项目规则并路由到 `AGENTS.md`。
 
 `AGENTS.md` 是唯一规则事实源，不要在 `CLAUDE.md` 中复制正文。
@@ -13,6 +13,7 @@
 完整流程位于 `docs/workflows/`：
 
 - `project-start.md`
+- `project-onboarding.md`
 - `change-plan.md`
 - `adversarial-review.md`
 - `harness-authoring.md`
@@ -20,8 +21,9 @@
 - `testing.md`
 - `systematic-debugging.md`
 - `durable-plan.md`
+- `knowledge-capture.md`
 
-Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/skills/` 自动发现入口。两个目录中的 Skill 都只引用上述公共流程。Trae 的 `.trae/rules/` 入口同样只负责路由，不复制规则正文。
+Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/skills/` 自动发现入口。两个目录中的 Harness 受管同名 Skill 内容必须一致，且只引用上述公共流程；项目自行维护的单工具 Skill 不受此限制。Trae 的 `.trae/rules/` 入口同样只负责路由，不复制规则正文。
 
 ## 运行确认
 
@@ -30,6 +32,7 @@ Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/
 1. 说明本项目的修改前必读顺序。
 2. 给出统一验证命令。
 3. 定位并概括 `docs/workflows/project-start.md`。
+4. 说明长任务何时必须使用 `docs/active-plan.md`，以及经验应如何路由到 Lessons、PRD、Decision Record、Reference 或 Skill。
 
 文件被发现只能证明兼容入口存在，不能替代真实任务验证或机械安全边界。
 
