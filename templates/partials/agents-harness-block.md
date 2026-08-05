@@ -12,6 +12,7 @@
 - 不把目录名或模板占位符当作架构事实；项目事实、验证命令和风险能力必须基于目标仓库证据配置。
 - 保留工作树中的既有修改，采用最小有效变更，不覆盖或回退无关内容。
 - 完成前运行与风险相称的项目检查；统一入口为 `powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All`。
+- 面向 Windows PowerShell 5.1 的脚本和命令示例不得使用 `&&` 或 `||`；独立命令用 `;` 分隔，需要失败即停止时使用 `$?`、`$LASTEXITCODE` 或显式 `if` 检查。
 - `.agents/skills/` 和 `.claude/skills/` 中由 Harness 管理的入口只负责路由公共工作流，不受项目自有 Skill 的复用门槛限制；项目自有 Skill 仍应在稳定复用后再沉淀。
 - 用户明确要求发现或沉淀知识，或出现重复纠正、重复失败、共享契约等强信号时，使用 `knowledge-capture` 工作流；默认先报告候选，不自动创建长期规则、Decision Record 或 Skill。
 - Harness 完整性通过只证明工程规则和入口可读取，不代表业务构建、测试或用户流程已经通过。

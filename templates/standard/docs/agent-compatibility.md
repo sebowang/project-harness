@@ -27,6 +27,8 @@ Codex 使用 `.agents/skills/` 自动发现入口，Claude Code 使用 `.claude/
 
 ## 运行确认
 
+初始化器和验证入口兼容 Windows PowerShell 5.1 与 PowerShell 7。面向 Windows PowerShell 5.1 的脚本和命令示例不得使用 `&&` 或 `||`；独立命令用 `;` 分隔，需要失败即停止时使用 `$?`、`$LASTEXITCODE` 或显式 `if` 检查。
+
 新工具或新版本首次使用时，请启动一个新会话并要求其：
 
 1. 说明本项目的修改前必读顺序。

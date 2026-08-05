@@ -30,6 +30,8 @@ Claude Code 支持项目根目录的 `CLAUDE.md`，也支持在其中使用 `@AG
 
 ## 兼容性验收
 
+初始化器和验证入口兼容 Windows PowerShell 5.1 与 PowerShell 7。面向 Windows PowerShell 5.1 的脚本和命令示例不得使用 `&&` 或 `||`；独立命令用 `;` 分隔，需要失败即停止时使用 `$?`、`$LASTEXITCODE` 或显式 `if` 检查。
+
 初始化 Smoke Test 验证：
 
 1. `AGENTS.md` 和 `CLAUDE.md` 同时生成。
