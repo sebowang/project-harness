@@ -2,146 +2,196 @@
 
 [中文](README.md) | English
 
-Project Harness is a generic, non-destructive setup for AI-assisted software development. It puts project rules, verified architecture facts, decisions, repeatable workflows, and validation commands in the repository so future Codex, Claude Code, and Trae sessions can recover context from files instead of relying on chat history.
+> Switching to another person, another AI Agent, or picking up a project after a week — the rules, decisions, and validation commands you hashed out are trapped in a chat history nobody else can reach.
+> Project Harness puts them in the repository, so anyone or any Agent can recover context from the repo instead of the last conversation.
 
-It is domain-, language-, and framework-neutral. The templates do not contain EasyBIM, BackStage, WPF, or other private project assumptions.
+Project Harness is a non-destructive setup for AI-assisted development. It installs only what is missing and never overwrites your existing rules. Codex, Claude Code, and Trae read the same `AGENTS.md` as the single source of rules and share one validation entry point, `verify.ps1`.
 
-## What It Does
+Current version: `v1.2.0`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
 
-- Provides `Light` and `Standard` installation profiles.
-- Uses `AGENTS.md` as the single shared rule source.
-- Routes Claude Code through `CLAUDE.md` and Trae through `.trae/rules/` without duplicating the rules.
-- Adds common workflows for project startup, planning, testing, debugging, handoff, and review.
-- Keeps project-owned files and existing rules by default.
-- Records managed-file baselines in `harness.lock.json` for safer updates.
-- Checks Harness structure, readiness, configured drift rules, and artifact catalogs through one verification entry point.
-- Provides routing for PRDs, Decision Records, references, durable lessons, and one active plan for long-running work without imposing a source-tree layout.
-- Supports explicit, reversible merging of a managed Harness block into an existing `AGENTS.md`.
-- Provides an optional Git pre-commit Hook for local catalog feedback without changing Git configuration automatically.
+## What Problem It Solves
+
+The hidden cost of AI-assisted development is lost context. An Agent built that API last month; the next person to touch it asks the same questions again: what is the build command, where does the code live, what are the conventions?
+
+Project Harness:
+
+- **Keeps context in version control.** Rules, project facts, decisions, and validation commands all live in the repo, independent of any chat history.
+- **Never destroys what you have.** It creates missing files by default. If an `AGENTS.md` already exists, the Harness rules can be merged into a managed block, leaving the rest of the file untouched.
+- **One set of rules for every tool.** Codex, Claude Code, and Trae all read the same `AGENTS.md` / `docs/workflows/` conventions.
+- **One validation entry point.** `verify.ps1` checks Harness structure, project readiness, and the validation commands you configured.
+- **Starts small, grows when needed.** Begin with `Light`; adopt `Standard` when the project gets complex. Plans, handoffs, and lessons are created only when they become useful.
+
+It does not design your architecture or guess build commands. The templates are domain-, language-, and framework-neutral. The initializer is PowerShell: it runs natively on Windows, and on macOS/Linux once PowerShell 7 is installed.
 
 ## Quick Start
 
-From the target repository, preview the installation first:
+Run these three steps in the target repository root:
 
 ```powershell
+# 1. Preview the installation plan. Nothing is written.
 powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
-  -TargetPath "C:\path\to\your-repository" `
-  -Profile Standard -WhatIf
-```
+  -TargetPath "C:\path\to\your-repository" -Profile Standard -WhatIf
 
-Install after reviewing the preview:
-
-```powershell
+# 2. Install after reviewing the preview.
 powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
-  -TargetPath "C:\path\to\your-repository" `
-  -Profile Standard
-```
+  -TargetPath "C:\path\to\your-repository" -Profile Standard
 
-If the target already has an `AGENTS.md`, use `-MergeProjectRules` to add the Harness-managed block while preserving the rest of the file. Use `-Force` only after reviewing a managed-file migration; project-owned files such as `AGENTS.md`, `harness.config.json`, and project documentation are not overwritten by `-Force`.
-
-After installation:
-
-```powershell
+# 3. Check that the Harness is ready.
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope Harness
+```
+
+On PowerShell 7, use `pwsh -File ...` with `/path/to/repository`.
+
+**If the target already has an `AGENTS.md`:** it is not modified by default. To connect the Harness rules into the same file, add `-MergeProjectRules`. The initializer only adds or refreshes the managed block between `<!-- PROJECT-HARNESS:BEGIN -->` and `<!-- PROJECT-HARNESS:END -->`, leaves everything outside it alone, and backs up the original file before writing it for the first time.
+
+`verify.ps1 -Scope Harness` proves only that the Harness is installed and its entry points are readable — not that your project passes a real build or test.
+
+### Have an Agent Install It
+
+Open Codex, Claude Code, or any terminal-capable Agent in the target repository and hand it this instruction. The Agent fetches the latest stable Release from GitHub and installs it into the current repository — no dependency on the author's machine paths.
+
+<details>
+<summary>Expand and copy the full install instruction</summary>
+
+> Install the latest stable Release of the GitHub repository `sebowang/project-harness` into the current Git repository. First check the repository root and `git status --short`, and keep all existing modifications. Resolve the latest stable version from GitHub Releases and report the actual version number to me; clone that version into a system temp directory, then run `scripts/initialize-project.ps1 -TargetPath <current repository> -Profile Standard -WhatIf` from the clone. The default install must not overwrite existing files. If the target already has an `AGENTS.md`, preview the managed-block merge with `-MergeProjectRules -WhatIf` and report what is preserved, then execute with `-MergeProjectRules` after my confirmation. If the preview shows a managed entry point (for example `CLAUDE.md`) conflicting with the template, report the conflict and wait for confirmation before using `-Force` for the managed-file migration. Do not modify business source, dependencies, deployment, or Git configuration. After the install, run the read-only Proposal phase of `project-onboarding` and clearly report whether the local catalog Hook is enabled, whether you recommend enabling it, and any conflict risk. Do not enable capabilities or run external side-effect commands; wait for my confirmation of the proposal.
+
+</details>
+
+Existing rules and configuration are preserved. `-Force` is used only after your confirmation to migrate managed files, with a backup taken first. If no stable Release is found, the Agent stops and reports — it must not fall back to `main`.
+
+### After Installation
+
+Two configuration tasks make the Harness useful for your project:
+
+1. Have the Agent run the read-only `project-onboarding` proposal, review it, and approve it before anything is written.
+2. Fill in `docs/project-map.md` from real source, and configure the actual build, test, lint, or smoke commands under `projectValidation` in `harness.config.json`.
+
+Then run the full check:
+
+```powershell
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 ```
 
-`Harness` verifies the Harness itself. `All` also runs readiness checks and the project validation commands explicitly configured in `harness.config.json`.
+`Standard` requires at least one project validation command. If none can be configured, explain why in `readiness.projectValidationWaiver`; the status then reads `ready with waiver` instead of a normal pass.
 
 ## How to Use It After Installation
 
-Project Harness does not change your source-tree layout or prescribe how you write code. It solves a different problem: when people or Agents change, or work resumes after a gap, everyone can recover the same rules, project facts, and validation entry points.
+Project Harness does not change your source-tree layout or prescribe how you write code. When people or Agents change, or work resumes after a gap, the repository still contains the same rules, project facts, and validation entry points. Four common situations:
 
-There are four common situations:
+| Situation | What to do |
+|---|---|
+| First adoption | Preview with `-WhatIf`; if an `AGENTS.md` already exists, decide whether `-MergeProjectRules` should connect the Harness block. Then have the Agent inspect the repository and confirm its understanding of the source layout and validation commands. |
+| Everyday development | Describe the request normally, for example: "Implement this feature and validate it against the existing project rules." The Agent reads the repository rules and notes before it implements and verifies the change. |
+| Complex or long-running work | Say "This task will take several days; create a plan first," or "Hand the current progress to the next session." Plans and handoffs are for cross-session, multi-phase, or high-risk work, not routine small tasks. |
+| A decision or lesson worth keeping | Say "Check whether this discussion contains durable project knowledge. List candidates first; do not write files yet." The Agent records conclusions only after your confirmation and routes them to the correct project document. |
 
-1. **First adoption**: preview with `-WhatIf`. If an `AGENTS.md` already exists, decide whether `-MergeProjectRules` should connect the Harness block. Then ask the Agent to inspect the repository and confirm its understanding of the source layout and validation commands.
-2. **Everyday development**: describe the request normally, for example: “Implement this feature and validate it against the existing project rules.” The Agent should recover context, implement, and verify without requiring you to orchestrate every internal workflow.
-3. **Complex or long-running work**: say “This task will take several days; create a plan first,” or “Hand the current progress to the next session.” Plans and handoffs are for cross-session, multi-phase, or high-risk work, not routine small tasks.
-4. **A decision or lesson worth keeping**: say “Check whether this discussion contains durable project knowledge. List candidates first; do not write files yet.” The Agent records conclusions only after confirmation and routes them to the correct project document.
-
-```text
-Install and confirm project configuration -> Everyday development and validation
-                                           -> Plan or handoff for complex work
-                                           -> Confirmed capture of durable knowledge
-```
-
-You still own project-specific decisions: real build and test commands, whether to merge existing rules, whether to enable a local Hook, and permissions, approvals, and rollback for production operations. Harness does not replace tests, CI, permissions, or approvals.
+You still own project-specific decisions: real build and test commands, whether to merge existing rules, whether to enable a local hook, and permissions, approvals, and rollback for production operations. Project Harness does not replace tests, CI, permissions, or approvals.
 
 The Harness does not prescribe source directories. `code/`, `src/`, `assets/`, and `notes/` remain owned by the target project; onboarding only records the real layout and responsibilities.
 
 For the complete lifecycle, information routing, and workflow details, read the [detailed usage guide](docs/usage-guide.en.md).
 
-## Existing Projects
-
-The initializer preserves existing files by default. For a repository that already has project-specific rules, the safe adoption path is:
-
-1. Run initialization with `-WhatIf`.
-2. Use `-MergeProjectRules` if the existing `AGENTS.md` should also route to Harness rules.
-3. Review any managed-entry collision before using `-Force`.
-4. Run the read-only `project-onboarding` proposal workflow.
-5. Configure only verified project build, test, lint, or smoke commands.
-
-Updates use `harness.lock.json` to distinguish unchanged managed files from local modifications. Conflicting updates stop before writing and preserve a backup under `.harness-backup/<timestamp>/`.
-
-## Artifact Catalogs
-
-Standard projects can register directories whose files are indexed in a project-owned README block. The default catalog covers `tests/harness/*.ps1`.
-
-The Harness does not create or move project-owned `code/`, `src/`, `assets/`, or `notes/` directories. It records the layout discovered during onboarding. When `durable-plan` is explicitly enabled, a task that spans sessions, has ordered phases, waits for external input, crosses a high-risk boundary, or has dependent modules must use the single `docs/active-plan.md`; small tasks do not create an empty plan.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/update-artifact-catalog.ps1
-powershell -ExecutionPolicy Bypass -File scripts/check-artifact-catalog.ps1
-```
-
-The updater replaces only the block between `PROJECT-HARNESS:CATALOG:BEGIN` and `PROJECT-HARNESS:CATALOG:END`. Text outside the markers remains project-owned. `verify.ps1 -Scope Harness` fails when the catalog is stale.
-
-## Optional Git Hook
-
-The Standard profile includes a pre-commit Hook file, but installation is deliberately explicit because it changes the repository's local `core.hooksPath` setting:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
-powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1 -Uninstall
-```
-
-The installer refuses to overwrite another hooks path and never edits or stages the catalog automatically. Hooks are local feedback, not a security boundary; CI should still run `scripts/verify.ps1 -Scope All`.
-
-`harness-doctor.ps1` reports whether the optional catalog Hook is enabled. The `project-onboarding` proposal also surfaces this decision so users do not need to know the Hook exists in advance.
-
 ## Profiles
 
 | Profile | Intended use | Includes |
 |---|---|---|
-| `Light` | Small, short-lived, or documentation repositories | Rules, project map, verification guide, and unified scripts |
-| `Standard` | Long-lived repositories with repeated human or Agent participation | `Light` plus workflows, skills, PRD/decision/reference/lesson routing, drift checks, artifact catalogs, and optional Hook support |
+| `Light` | Small, short-lived, or documentation repositories | `AGENTS.md`, project map, verification guide, unified scripts |
+| `Standard` | Long-lived repositories, or projects with repeated human and Agent handoffs | `Light` plus workflows, Skills, requirement/decision/lesson routing, document checks, artifact catalogs, optional Hook support |
 
-There is no generic automatic `Full` profile. CI, branch protection, permissions, approvals, deployments, databases, and production safeguards must be configured from the real project's evidence.
+There is no generic automatic `Full` profile. Configure CI, branch protection, permissions, approvals, deployments, databases, and production safeguards for the real project.
 
-## Compatibility Model
+<details>
+<summary>Structure generated by the Standard profile</summary>
+
+```text
+AGENTS.md
+CLAUDE.md
+harness.config.json
+harness.lock.json
+.trae/rules/project-harness.md
+docs/
+  harness-configuration.md
+  project-map.md
+  verification.md
+  agent-compatibility.md
+  workflows/*.md
+  prd/README.md
+  decisions/README.md
+  reference/README.md
+  lessons/README.md
+.agents/skills/
+  */SKILL.md
+.claude/skills/
+  */SKILL.md
+scripts/
+  check-artifact-catalog.ps1
+  update-artifact-catalog.ps1
+  install-git-hooks.ps1
+  check-harness.ps1
+  check-readiness.ps1
+  check-doc-drift.ps1
+  harness-status.ps1
+  harness-doctor.ps1
+  verify.ps1
+tests/harness/README.md
+.githooks/pre-commit
+```
+
+</details>
+
+Small tasks do not need a plan or handoff file. Cross-session long-running work maintains one handoff file; with `durable-plan` enabled, only work that spans sessions, has ordered phases, crosses a high-risk boundary, or depends on multiple modules maintains a `docs/active-plan.md`.
+
+## Updates and Maintenance
+
+Update the Harness with the same initializer — preview first, then apply:
+
+```powershell
+# Preview the full update plan. Nothing is written.
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\your-repository" -Update -WhatIf
+
+# Apply after reviewing.
+powershell -ExecutionPolicy Bypass -File scripts/initialize-project.ps1 `
+  -TargetPath "C:\path\to\your-repository" -Update
+```
+
+Updates replace only managed files that have not been locally modified since the last install. If both sides changed the same path, a file is missing, or a path conflicts, the update stops before writing; the original files and lock are backed up under `.harness-backup/<timestamp>/`. A file a new version no longer manages is kept by default and marked `ORPHANED`; once you confirm it is not needed and it has not been locally modified, clean it up explicitly with `-Prune`.
+
+Optional capabilities:
+
+- **Artifact catalog**: The Standard profile indexes `tests/harness/*.ps1` in a managed README block. Run `scripts/update-artifact-catalog.ps1` after adding or removing scripts; `verify.ps1 -Scope Harness` reports a stale catalog.
+- **Local pre-commit hook**: `scripts/install-git-hooks.ps1`, with `-Uninstall` to remove. It works only when `core.hooksPath` is unset or already `.githooks`, never overwrites an existing hook, and is not installed automatically; CI should still run `scripts/verify.ps1 -Scope All`.
+- **Read-only diagnostics**: `scripts/harness-status.ps1` and `scripts/harness-doctor.ps1`.
+
+## Compatibility
 
 | Tool | Entry point | Shared source |
 |---|---|---|
 | Codex | `AGENTS.md`, `.agents/skills/` | `docs/workflows/` |
 | Claude Code | `CLAUDE.md` importing `AGENTS.md`, `.claude/skills/` | `docs/workflows/` |
-| Trae | `.trae/rules/project-harness.md` | `AGENTS.md`, `docs/workflows/` |
+| Trae | `.trae/rules/project-harness.md` routing to `AGENTS.md` | `docs/workflows/` |
 
-Tool-specific entries are thin routing files. Compatibility means that the repository exposes the expected entry points; it does not guarantee that a model will follow every instruction or replace mechanical controls such as CI, permissions, and approvals.
+Tool-specific entries only point to the shared workflow; they do not duplicate the full rules. See the [Agent compatibility strategy](docs/agent-compatibility.md) for details.
 
-## Development and Release Checks
+## Configuring Real Validation
 
-From this repository root:
+Configure each project validation command as an executable plus its arguments in `harness.config.json`, so the Harness can run it reliably:
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tests/initialize-smoke.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File tests/check-template-neutrality.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
-git diff --check
+```json
+{
+  "projectValidation": [
+    {
+      "name": "Run tests",
+      "executable": "dotnet",
+      "arguments": ["test", "MyProject.sln", "--no-restore"]
+    }
+  ]
+}
 ```
 
-See [CHANGELOG.md](CHANGELOG.md), [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
+Then run `scripts/verify.ps1 -Scope All` for the full check.
 
-Additional design and workflow references:
+## Principles and Workflows
 
 - [Design principles](docs/design-principles.md)
 - [Initialization workflow](docs/initialization-workflow.md)
@@ -150,6 +200,8 @@ Additional design and workflow references:
 - [Decision Record guide](docs/decisions/README.md)
 - [Lessons guide](docs/lessons/README.md)
 - [Agent compatibility](docs/agent-compatibility.md)
+- [CI platform compatibility](docs/ci-platform-compatibility.md)
+- [Harness configuration](docs/harness-configuration.md)
 
 ## License
 
