@@ -115,70 +115,27 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 
 `Standard` 默认要求至少一个项目验证命令。确实没有可运行命令时，可以在 `readiness.projectValidationWaiver` 中记录具体原因；这种状态会报告为 `ready with waiver`，不会伪装成普通验证通过。
 
-## 安装后的完整开发流程
+## 装好以后怎么用
 
-Harness 不是只在初始化时运行一次。正确用法是让每次开发都经过同一条可恢复、可验证的流程：
+Harness 不会改变你的代码目录，也不会替你规定开发方式。它解决的是：换人、换 Agent 或隔一段时间再继续开发时，大家仍能找到同一套规则、项目事实和验证入口。
 
-1. **初始化与接入规则**：先使用 `-WhatIf` 预览；已有 `AGENTS.md` 时，由用户确认是否使用 `-MergeProjectRules` 接入受控区块。
-2. **项目勘察**：让 Agent 执行 `project-onboarding` 的 Proposal 阶段。Agent 从源码和现有文档识别真实目录、模块边界、构建入口、验证命令、已有规则和风险能力，用户确认后才写入项目配置。
-3. **开始任务**：Agent 按 `project-start` 读取 `AGENTS.md`、`docs/project-map.md`、`docs/verification.md`、相关 PRD、Active Decision Record、Reference、Lessons，以及存在时的 `docs/handoff.md`。
-4. **规划变更**：非简单任务使用 `change-plan` 明确目标、范围、不可接受行为和验证方式。项目启用 `durable-plan` 且任务命中跨会话、多阶段、高风险或多模块依赖条件时，先创建或恢复唯一的 `docs/active-plan.md`。
-5. **实施与验证**：Agent 保留既有修改，只做与任务直接相关的变更，并运行风险相称的构建、测试、Lint 或 Harness Check。
-6. **审查与交付**：高风险或共享行为变更使用 `adversarial-review` 检查回归、范围漂移和缺失验证，最后运行 `scripts/verify.ps1 -Scope All`。
-7. **知识沉淀**：用户可以要求 Agent 检查当前可访问会话和仓库证据，先列出值得沉淀的候选；只有用户明确要求记录，或目标已经足够明确时，才写入对应文件。
-8. **跨会话继续**：任务需要交给下一次会话时，使用 `project-handoff` 维护唯一的 `docs/handoff.md`。任务完成后，把长期结论迁移到正式载体，不把交接文件当永久知识库。
+你主要会遇到四种场景：
+
+1. **第一次接入项目**：先用 `-WhatIf` 预览安装结果；已有 `AGENTS.md` 时，确认是否使用 `-MergeProjectRules` 接入 Harness 规则。安装后让 Agent 先勘察项目，确认它识别出的代码结构和测试命令。
+2. **日常开发**：直接说清需求，例如“帮我实现这个功能，并按项目现有规则验证”。Agent 应先读取项目上下文，再实施和验证；你不需要手动安排每个内部工作流。
+3. **复杂或持续较久的任务**：明确告诉 Agent“这个任务会持续几天，先建立计划”或“把当前进展交接给下一次会话”。只有跨会话、多阶段或高风险任务才需要维护计划和交接文件。
+4. **想保留经验或决定**：可以说“检查这次讨论有没有值得长期记录的经验，先列候选，不要直接写文件”。确认后，Agent 才会把结论放进正确的项目文档。
 
 ```text
-安装预览 -> Onboarding Proposal -> 用户确认项目配置
-         -> Project Start -> Change Plan / Active Plan
-         -> 实施 -> 测试 -> 对抗审查 -> Scope All
-         -> 知识候选 -> 用户确认沉淀 -> 交付或 Handoff
+安装并确认项目配置 -> 日常开发与验证 -> 复杂任务维护计划或交接
+                                      -> 用户确认后沉淀长期经验
 ```
 
-Harness 可以让 Agent 更容易发现规则和恢复上下文，但不能保证模型永远不会遗漏指令。构建、测试、CI、权限和审批仍是重要的机械约束。
-
-## 项目信息应该放在哪里
-
-不要把所有内容都写进 `AGENTS.md`，也不要把一次性经验立即制作成 Skill。Standard 使用以下路由：
-
-| 内容 | 主要位置 | 使用边界 |
-|---|---|---|
-| 必须长期遵守的研发规则 | `AGENTS.md` | 保持简短、稳定；项目专属规则放在 Harness 受控区块外 |
-| 产品目标、范围和验收条件 | `docs/prd/` | 描述用户需要什么，不代替技术决策 |
-| 长期选择和系统不变量 | `docs/decisions/` | 统一使用 Decision Record；用 `Type` 区分 `System Invariant` 与 `Architecture Decision` |
-| 当前架构、模块和接口事实 | `docs/project-map.md`、`docs/reference/` | 必须能从源码、接口或环境复核 |
-| 用户纠正、重复失败和可复用教训 | `docs/lessons/` | 不冒充规则、事实或临时日志 |
-| 已稳定复用的执行流程 | `docs/workflows/` 和对应 Skill | 至少两次独立成功复用，并有清楚的输入、输出和验证方式 |
-| 当前长任务状态 | `docs/active-plan.md` | 只保留一个；小任务不创建空计划 |
-| 跨会话交接状态 | `docs/handoff.md` | 只保留一个；完成后归档或删除 |
-
-详细分类规则见 [Knowledge Capture 工作流](docs/workflows/knowledge-capture.md)、[Decision Record 指南](docs/decisions/README.md) 和 [Lessons 指南](docs/lessons/README.md)。
-
-### 用户可以直接这样说
-
-不需要记关键词或命令格式，使用自然语言即可：
-
-> 检查当前可访问的会话和仓库证据，看有没有值得长期沉淀的内容。先列候选和建议位置，不要修改文件。
-
-> 把刚才确认的兼容性决定记录下来，先判断它应该进入 Decision Record、规则还是 Lessons，再更新正确的文件。
-
-> 判断这套排障流程是否已经适合固化为 Skill；如果还不成熟，说明缺少哪些复用证据，不要强行创建。
-
-Agent 必须说明自己实际能访问哪些会话和文件。无法读取的历史会话不能凭印象总结；仅仅出现“Skill”“决策”等词，也不会触发机械写入。
-
-## 用户需要确认和维护的事项
-
-以下内容不能由通用 Harness 替项目做决定：
-
-- 选择 `Light` 还是 `Standard`，以及是否把 Harness 规则合并进已有 `AGENTS.md`。
-- 审核 `project-onboarding` Proposal，确认模块边界、验证命令、风险能力和知识目录是否符合真实项目。
-- 在 `harness.config.json.projectValidation` 中维护真实可执行的构建、测试、Lint 或 Smoke Check。
-- 决定是否启用 `durable-plan` 等能力，以及是否显式安装本地 Git Hook。
-- 将 `scripts/verify.ps1 -Scope All` 接入项目 CI；本地 Hook 可以跳过，不能代替 CI、权限或审批。
-- 更新 Harness 前先使用 `-Update -WhatIf` 查看计划，处理本地修改冲突和 `ORPHANED` 文件后再执行更新。
-- 对生产发布、数据库迁移、外部消息、付费操作等高影响行为继续使用项目自己的权限、审批和回滚机制。
+你仍需要确认几个项目自己的决定：真实可运行的构建/测试命令、是否合并已有规则、是否启用本地 Hook，以及生产操作的权限、审批和回滚方式。Harness 不能替代测试、CI、权限或审批。
 
 用户不需要按照 Harness 规定整理源码目录。`code/`、`src/`、`assets/`、`notes/` 等目录继续由目标项目自行维护，Harness 只记录真实布局和责任边界。
+
+想理解完整机制、文件应该放在哪里或每个工作流何时生效，请阅读[详细使用指南](docs/usage-guide.md)。
 
 ## 初始化级别
 
@@ -293,6 +250,7 @@ powershell -ExecutionPolicy Bypass -File scripts/harness-doctor.ps1
 
 - [设计原则](docs/design-principles.md)
 - [初始化工作流](docs/initialization-workflow.md)
+- [详细使用指南](docs/usage-guide.md)
 - [Knowledge Capture 工作流](docs/workflows/knowledge-capture.md)
 - [Decision Record 指南](docs/decisions/README.md)
 - [Lessons 指南](docs/lessons/README.md)
