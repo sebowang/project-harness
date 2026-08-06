@@ -86,10 +86,14 @@ function Get-RepositorySignals {
         'package.json' = 'Node.js / JavaScript / TypeScript'
         'pyproject.toml' = 'Python'
         'requirements.txt' = 'Python'
+        'setup.py' = 'Python'
         'Cargo.toml' = 'Rust'
         'go.mod' = 'Go'
         'pom.xml' = 'Maven / Java'
         'build.gradle' = 'Gradle / JVM'
+        'build.gradle.kts' = 'Gradle / JVM'
+        'gradlew' = 'Gradle / JVM'
+        'CMakeLists.txt' = 'CMake / C++'
         'Makefile' = 'Make-based build'
     }
 
@@ -99,8 +103,9 @@ function Get-RepositorySignals {
         }
     }
 
-    if (Get-ChildItem -LiteralPath $RepositoryRoot -Filter '*.sln' -File -ErrorAction SilentlyContinue | Select-Object -First 1) {
-        $signals.Add('.NET solution')
+    $dotNetSignals = Get-ChildItem -LiteralPath $RepositoryRoot -Recurse -File -Include '*.sln', '*.csproj', '*.fsproj', '*.vbproj', 'Directory.Build.props', 'global.json' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -ne $dotNetSignals) {
+        $signals.Add('.NET')
     }
 
     if ($signals.Count -eq 0) {

@@ -11,7 +11,7 @@
 - 如果 `harness.config.json` 启用了 `durable-plan`，按 `docs/workflows/durable-plan.md` 判断是否命中长任务触发条件；命中时必须先创建或恢复唯一的 `docs/active-plan.md`。
 - 不把目录名或模板占位符当作架构事实；项目事实、验证命令和风险能力必须基于目标仓库证据配置。
 - 保留工作树中的既有修改，采用最小有效变更，不覆盖或回退无关内容。
-- 完成前运行与风险相称的项目检查；统一入口为 `powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All`。
+- 完成前运行与风险相称的项目检查；统一入口为 `pwsh -NoProfile -File scripts/verify.ps1 -Scope All`，Windows PowerShell 5.1 环境使用 `powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All`。
 - 新增或修改外部接口请求构造或响应解析、字段映射、共享契约，或仅靠代码审查难以确认的可独立验证逻辑时，必须新增或引用覆盖该行为的自动化测试；可使用项目现有单元测试、集成测试或 Harness。无法自动化时，交付说明必须记录原因、替代验证、遗留风险和下一步，并优先评估最小的可测边界调整。
 - 面向 Windows PowerShell 5.1 的脚本和命令示例不得使用 `&&` 或 `||`；独立命令用 `;` 分隔，需要失败即停止时使用 `$?`、`$LASTEXITCODE` 或显式 `if` 检查。
 - `.agents/skills/` 和 `.claude/skills/` 中由 Harness 管理的入口只负责路由公共工作流，不受项目自有 Skill 的复用门槛限制；项目自有 Skill 仍应在稳定复用后再沉淀。

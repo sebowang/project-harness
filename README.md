@@ -1,4 +1,4 @@
-# Project Harness v1.3.4
+# Project Harness v1.3.5
 
 [中文](README.md) | [English](README.en.md)
 
@@ -7,7 +7,7 @@
 
 Project Harness 是一套非破坏性的 AI 辅助开发初始化工具：默认只创建缺失文件，不覆盖已有规则。Codex、Claude Code 和 Trae 读取同一份 `AGENTS.md` 规则，共用一个 `verify.ps1` 验证入口。
 
-当前版本：`v1.3.4`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
+当前版本：`v1.3.5`。发布说明和兼容/迁移边界见 [CHANGELOG.md](CHANGELOG.md)、[发布指南](docs/release.md) 和 [兼容与迁移](docs/compatibility-and-migration.md)。
 
 ## 它解决什么问题
 
@@ -63,7 +63,7 @@ PowerShell 7 环境改用 `pwsh -File ...`，路径写成 `/path/to/repository`�
 
 安装完成后还差两步，Harness 才对你的项目真正有用：
 
-1. 让 Agent 按 `project-onboarding` 工作流以只读方式勘察仓库并给出 Proposal，你确认后它才会写入项目文件。
+1. 不需要自己知道构建或测试命令。让 Agent 按 `project-onboarding` 工作流以只读方式勘察仓库并给出 Proposal；它应基于已有源码、CI 和本机工具给出可确认的配置草案，你确认后它才会写入项目文件。C#/.NET 项目会先区分 SDK 风格与 .NET Framework，再给出对应候选。
 2. 根据真实源码填写 `docs/project-map.md`，并在 `harness.config.json` 的 `projectValidation` 中配置项目实际可运行的构建、测试、Lint 或 Smoke Check；为命令标注 `kind`，编译型项目在 `readiness.requiredValidationKinds` 声明 `build`。
 
 然后运行完整检查：

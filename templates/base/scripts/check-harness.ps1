@@ -153,6 +153,42 @@ foreach ($check in @($config.projectValidation)) {
     if ($null -ne $kindProperty -and [string]$kindProperty.Value -notin @('build', 'test', 'lint', 'smoke', 'custom')) {
         $errors.Add("Unsupported project validation kind: $($check.kind)")
     }
+    $workingDirectoryProperty = $check.PSObject.Properties['workingDirectory']
+    if ($null -ne $workingDirectoryProperty) {
+        $workingDirectory = $workingDirectoryProperty.Value
+        if ($workingDirectory -isnot [string] -or [string]::IsNullOrWhiteSpace([string]$workingDirectory) -or [IO.Path]::IsPathRooted([string]$workingDirectory)) {
+            $errors.Add("Project validation workingDirectory must be a nonempty repository-relative path: $($check.name)")
+        } else {
+            $candidate = [IO.Path]::GetFullPath((Join-Path $repositoryRoot ([string]$workingDirectory)))
+            $rootPrefix = $repositoryRoot.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+            if (-not $candidate.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase) -or -not (Test-Path -LiteralPath $candidate -PathType Container)) {
+                $errors.Add("Project validation workingDirectory does not exist inside the repository: $($check.name)")
+            }
+        }
+    }
+    $environmentProperty = $check.PSObject.Properties['environment']
+    if ($null -ne $environmentProperty) {
+        $environment = $environmentProperty.Value
+        if ($null -eq $environment -or $environment -is [System.Array] -or $environment -is [string]) {
+            $errors.Add("Project validation environment must be an object: $($check.name)")
+        } else {
+            foreach ($entry in $environment.PSObject.Properties) {
+                if ($entry.Name -notmatch '^[A-Za-z_][A-Za-z0-9_]*$' -or $entry.Value -isnot [string]) {
+                    $errors.Add("Project validation environment must contain string variable names and values: $($check.name)")
+                    break
+                }
+            }
+        }
+    }
+    $timeoutProperty = $check.PSObject.Properties['timeoutSeconds']
+    if ($null -ne $timeoutProperty) {
+        try {
+            $timeout = [int]$timeoutProperty.Value
+            if ($timeout -lt 1) { throw 'timeout must be positive' }
+        } catch {
+            $errors.Add("Project validation timeoutSeconds must be a positive integer: $($check.name)")
+        }
+    }
 }
 
 foreach ($check in @($config.driftChecks)) {

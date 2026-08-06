@@ -28,13 +28,18 @@
   "name": "Run tests",
   "kind": "test",
   "executable": "dotnet",
-  "arguments": ["test", "Example.sln", "--no-restore"]
+  "arguments": ["test", "Example.sln", "--no-restore"],
+  "workingDirectory": "src/Example",
+  "environment": { "DOTNET_NOLOGO": "1" },
+  "timeoutSeconds": 300
 }
 ```
 
 使用 `executable + arguments`，不要配置交给 `Invoke-Expression` 的完整命令字符串。
 
 `kind` 可选值为 `build`、`test`、`lint`、`smoke`、`custom`；省略时按 `custom` 处理。它描述这条命令能提供哪一层证据，不是对命令行为的自动认证。
+
+`workingDirectory`、`environment` 与 `timeoutSeconds` 都是可选项。工作目录必须是仓库内的相对目录；环境变量只在该验证命令执行期间生效，不要把 Token、密码或其他 Secret 写入会提交的配置；超时必须是正整数秒，适合防止测试挂起。未配置时，命令在仓库根目录执行、继承当前环境且不设置超时。
 
 ## Readiness
 

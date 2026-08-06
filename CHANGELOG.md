@@ -2,6 +2,23 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.3.5] - 2026-08-06
+
+### Added
+
+- `projectValidation` 可选支持仓库内工作目录、命令级环境变量和正整数超时；超时命令在独立 PowerShell Job 中终止，配置中的环境变量不会保留到后续命令。
+- 增加可复制的 GitHub Actions 统一验证示例。
+
+### Fixed
+
+- 初始化器与 onboarding 对齐构建信号：增加 CMake、Gradle Kotlin、Python `setup.py`，并递归识别 .NET solution、项目和 SDK 配置文件。
+- 项目验证执行期间将原生命令 stderr 保持为非终止输出，避免 Windows PowerShell 5.1 因 stderr 合并而遮蔽可观察的退出码。
+
+### Changed
+
+- 统一规则入口优先使用跨平台 `pwsh`，并明确 Windows PowerShell 5.1 回退命令。
+- 更新流程说明备份目录由目标仓库管理，初始化器不会静默改写已有 `.gitignore`。
+
 ## [1.3.4] - 2026-08-05
 
 ### Changed

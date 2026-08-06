@@ -1,4 +1,4 @@
-# Project Harness v1.3.4
+# Project Harness v1.3.5
 
 [中文](README.md) | English
 
@@ -7,7 +7,7 @@
 
 Project Harness is a non-destructive setup for AI-assisted development. It installs only what is missing and never overwrites your existing rules. Codex, Claude Code, and Trae read the same `AGENTS.md` as the single source of rules and share one validation entry point, `verify.ps1`.
 
-Current version: `v1.3.4`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
+Current version: `v1.3.5`. See [CHANGELOG.md](CHANGELOG.md), the [release guide](docs/release.md), and [compatibility and migration](docs/compatibility-and-migration.md) for versioning and upgrade boundaries.
 
 ## What Problem It Solves
 
@@ -63,7 +63,7 @@ Existing rules and configuration are preserved. `-Force` is used only after your
 
 Two configuration tasks make the Harness useful for your project:
 
-1. Have the Agent run the read-only `project-onboarding` proposal, review it, and approve it before anything is written.
+1. You do not need to know the build or test commands yourself. Have the Agent run the read-only `project-onboarding` proposal; it must inspect source, CI, and local tools, then present a configuration draft for your approval before writing project files. For C#/.NET, it first distinguishes SDK-style projects from .NET Framework and proposes the matching commands.
 2. Fill in `docs/project-map.md` from real source, and configure the actual build, test, lint, or smoke commands under `projectValidation` in `harness.config.json`. Mark each command with its evidence `kind`; compiled projects should declare `build` under `readiness.requiredValidationKinds`.
 
 Then run the full check:

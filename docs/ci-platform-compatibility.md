@@ -14,11 +14,11 @@ pwsh -NoProfile -File scripts/verify.ps1 -Scope All
 
 | 平台 | 支持方式 | 边界 |
 |---|---|---|
-| GitHub Actions | 本仓库 CI 已验证 | 目标项目需自行配置触发条件、分支保护和环境审批 |
+| GitHub Actions | 提供 `examples/ci/github-actions.yml`；本仓库 CI 已验证 | 目标项目需自行配置触发条件、分支保护和环境审批 |
 | GitLab CI | 提供 `examples/ci/gitlab-ci.yml` | Runner 必须提供 `pwsh`，示例不创建或管理 Runner |
 | CNB（cnb.cool） | 提供 `examples/ci/cnb.yml` 片段 | 使用前确认项目 Runner 已提供 `pwsh`，并按当前 CNB 配置规则合并 |
 
-`examples/ci/` 属于本 Harness 源仓库的参考资料，不在 `templates/manifest.json` 中，也不会被初始化器安装、更新或写入目标项目。
+`examples/ci/` 属于本 Harness 源仓库的参考资料，不在 `templates/manifest.json` 中，也不会被初始化器安装、更新或写入目标项目。复制示例前先确认目标仓库的 `projectValidation` 已能在对应 Runner 中运行。
 
 目标仓库没有 `.github/workflows/`、`.gitlab-ci.yml` 或 `.cnb.yml` 时，Onboarding 应报告“CI 未配置”。这只是平台事实和后续建议，不会被 Harness 结构检查自动判定为失败，也不会因为存在 CNB remote 就假定已有 CNB 消费方。
 

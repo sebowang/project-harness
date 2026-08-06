@@ -34,6 +34,10 @@ try {
     $existingManaged = Join-Path $testRoot 'docs\harness-configuration.md'
     New-Item -ItemType Directory -Path (Split-Path -Parent $existingManaged) -Force | Out-Null
     [IO.File]::WriteAllText($existingManaged, "# Existing managed-path content`n", (New-Object Text.UTF8Encoding($false)))
+    $dotNetProject = Join-Path $testRoot 'src\Example.csproj'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $dotNetProject) -Force | Out-Null
+    [IO.File]::WriteAllText($dotNetProject, '<Project Sdk="Microsoft.NET.Sdk" />', (New-Object Text.UTF8Encoding($false)))
+    [IO.File]::WriteAllText((Join-Path $testRoot 'CMakeLists.txt'), 'cmake_minimum_required(VERSION 3.20)', (New-Object Text.UTF8Encoding($false)))
 
     $initializationOutput = (& $initializer -TargetPath $testRoot -Profile Standard -ProjectName 'Smoke Test Project' -MergeProjectRules 6>&1 | Out-String)
     if (-not $?) {
@@ -41,6 +45,9 @@ try {
     }
     if ($initializationOutput -notmatch [regex]::Escape('scripts/install-git-hooks.ps1')) {
         throw 'Standard initialization did not disclose the optional Git Hook command.'
+    }
+    if ($initializationOutput -notmatch [regex]::Escape('- .NET') -or $initializationOutput -notmatch [regex]::Escape('- CMake / C++')) {
+        throw 'Repository signal detection did not identify nested .NET and CMake files.'
     }
 
     $expectedPaths = @(
@@ -241,6 +248,11 @@ try {
     if ($onboardingWorkflow -notmatch [regex]::Escape('scripts/install-git-hooks.ps1') -or $onboardingWorkflow -notmatch [regex]::Escape('core.hooksPath')) {
         throw 'Project onboarding does not surface the optional Git Hook decision.'
     }
+    foreach ($requiredOnboardingMarker in @('TargetFramework', 'dotnet --list-sdks', 'MSBuild', 'vstest.console')) {
+        if ($onboardingWorkflow -notmatch [regex]::Escape($requiredOnboardingMarker)) {
+            throw "Project onboarding does not provide evidence-based .NET validation guidance: $requiredOnboardingMarker"
+        }
+    }
     $ciCompatibility = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\ci-platform-compatibility.md'))
     if ($ciCompatibility -notmatch 'GitLab CI' -or $ciCompatibility -notmatch 'CNB') {
         throw 'Generated CI platform compatibility guidance is incomplete.'
@@ -327,12 +339,23 @@ try {
         throw 'Standard requiredPaths differ from tests/golden/standard-required-paths.txt.'
     }
 
+    $validationDirectory = Join-Path $testRoot 'validation-workdir'
+    New-Item -ItemType Directory -Path $validationDirectory -Force | Out-Null
+    $validationCommand = @'
+if ((Split-Path -Leaf (Get-Location).Path) -ne 'validation-workdir') { exit 11 }
+if ($env:PROJECT_HARNESS_SMOKE -ne 'configured') { exit 12 }
+[Console]::Error.WriteLine('Expected project validation stderr.')
+Write-Output 'Project validation passed.'
+'@
     $config.projectValidation = @(
         [pscustomobject]@{
             name = 'Smoke project command'
             kind = 'smoke'
             executable = [IO.Path]::GetFileNameWithoutExtension($powerShellExecutable)
-            arguments = @('-NoProfile', '-Command', "Write-Output 'Project validation passed.'")
+            arguments = @('-NoProfile', '-Command', $validationCommand)
+            workingDirectory = 'validation-workdir'
+            environment = [pscustomobject]@{ PROJECT_HARNESS_SMOKE = 'configured' }
+            timeoutSeconds = 10
         }
     )
     $config | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
@@ -347,6 +370,9 @@ try {
     & (Join-Path $testRoot 'scripts\verify.ps1') -Scope All
     if (-not $?) {
         throw 'Ready harness verification failed.'
+    }
+    if ($env:PROJECT_HARNESS_SMOKE) {
+        throw 'Project validation environment variables leaked into the caller process.'
     }
     & (Join-Path $testRoot 'scripts\harness-doctor.ps1')
     if (-not $?) {
@@ -365,6 +391,18 @@ try {
     if (-not $?) {
         throw 'Readiness waiver did not allow missing build evidence during full verification.'
     }
+    [IO.File]::WriteAllText($configPath, $readyConfig, (New-Object Text.UTF8Encoding($false)))
+
+    $timeoutConfig = $readyConfig | ConvertFrom-Json
+    $timeoutConfig.projectValidation += [pscustomobject]@{
+        name = 'Timed project command'
+        kind = 'smoke'
+        executable = [IO.Path]::GetFileNameWithoutExtension($powerShellExecutable)
+        arguments = @('-NoProfile', '-Command', 'Start-Sleep -Seconds 5')
+        timeoutSeconds = 1
+    }
+    $timeoutConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\verify.ps1') -Arguments @('-Scope', 'Project')
     [IO.File]::WriteAllText($configPath, $readyConfig, (New-Object Text.UTF8Encoding($false)))
 
     New-Item -ItemType Directory -Path $updateSourceRoot -Force | Out-Null
