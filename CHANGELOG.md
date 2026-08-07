@@ -2,6 +2,19 @@
 
 本项目遵循语义化版本。每个版本的模板版本来自 `templates/manifest.json`，目标仓库的 `harness.lock.json` 记录已安装版本。
 
+## [1.3.6] - 2026-08-07
+
+### Added
+
+- `project-onboarding` 支持用户明确发起的“基线刷新”或“整理整个项目”：先只读审计项目事实和治理文档，再提交 Proposal 并等待确认。
+- 可选 pre-commit Hook 现在校验暂存的 artifact catalog 和已配置文档漂移断言。
+
+### Changed
+
+- `Standard` 的 readiness 在存在项目验证要求、但未声明任何 `requiredValidationKinds` 且没有具体豁免时失败，避免把缺少证据策略误报为普通通过。
+- 文档漂移断言只用于稳定的机械事实；项目地图的模块职责、边界和依赖仍由用户确认，不会自动改写。
+- 受管 Agent 规则要求在执行命令前确认操作系统、Shell 和项目工具链，并优先复用仓库已有入口。
+
 ## [1.3.5] - 2026-08-06
 
 ### Added

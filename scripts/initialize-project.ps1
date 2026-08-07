@@ -619,12 +619,12 @@ foreach ($signal in Get-RepositorySignals -RepositoryRoot $target) {
 
 Write-Host ''
 Write-Host 'Next steps:'
-Write-Host '1. Fill docs/project-map.md with verified repository facts.'
-Write-Host '2. Add real project checks to harness.config.json.'
+Write-Host '1. Run the project-onboarding read-only Proposal to map verified repository facts.'
+Write-Host '2. Confirm proposed updates to docs/project-map.md and harness.config.json.'
 Write-Host '3. Remove TODO(HARNESS) markers after review.'
 Write-Host '4. Run scripts/verify.ps1 -Scope All.'
 if ($Profile -eq 'Standard') {
-    Write-Host '5. Optional: enable the local catalog pre-commit hook after review:'
+    Write-Host '5. Optional: enable the local artifact catalog and configured document-drift pre-commit checks after review:'
     Write-Host '   powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1'
 }
 Write-Host ''

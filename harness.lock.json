@@ -1,6 +1,6 @@
 {
     "schemaVersion":  1,
-    "harnessVersion":  "1.3.5",
+    "harnessVersion":  "1.3.6",
     "profile":  "Standard",
     "projectName":  "Project Harness",
     "managedFiles":  [
@@ -17,17 +17,17 @@
                          {
                              "path":  "docs/harness-configuration.md",
                              "ownership":  "managed",
-                             "baselineHash":  "A39296F3D64072C37009DF4628423138F3E5C1E8C03035EE7D19BB0A7A82AF4C"
+                             "baselineHash":  "709E1AD0AF5A42C72F456AB98154EEAC45DE186B1FCCF67E2608B43FE2B9230F"
                          },
                          {
                              "path":  "scripts/check-harness.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "DFADADF05720DD3C30B90E9D6FEC52B7B3DA38A41B68790A489832EBB3888E76"
+                             "baselineHash":  "DB9D7C32ED48289F4CE0410BA79518DB29AD8C0B5BF180F87D6DFA08ACEA3AB4"
                          },
                          {
                              "path":  "scripts/check-readiness.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "790035BC5780D0F607BC9746EB94D2658D4DE2109139F6E4084448D63654379D"
+                             "baselineHash":  "216E9006DA8C5C08B5BD342B2A62B31EF494B05B886A2CE08FD6116A3F6451AC"
                          },
                          {
                              "path":  "scripts/harness-doctor.ps1",
@@ -37,12 +37,12 @@
                          {
                              "path":  "scripts/harness-status.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "CDA0E304B21AC56F2E96BD25F73C23544E976D8B21F3565EBC1714674B395246"
+                             "baselineHash":  "9BB8089971289EAB2874149D736E247DC3C8D0639F0E3E0CBDC27274F1E6C147"
                          },
                          {
                              "path":  "scripts/verify.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "CADF8AA2BEEAC290FCFB09586D67E66DBC50E02C5DD9E0655E427AE61A0B2761"
+                             "baselineHash":  "43BA84DD0A87BA190304500D3951F0590D8E2BDF9D08392B1B363D812520954A"
                          },
                          {
                              "path":  ".agents/skills/adversarial-review/SKILL.md",
@@ -72,7 +72,7 @@
                          {
                              "path":  ".agents/skills/project-onboarding/SKILL.md",
                              "ownership":  "managed",
-                             "baselineHash":  "20C4EBD0329F6167CAD2560EA86493D43C6933190B5A45010363ADCF4BEFAF7D"
+                             "baselineHash":  "6C553D544C1C55898ECE16F55AF9BCFBCA3B6BDEAA9B7CB0601B821C8675027A"
                          },
                          {
                              "path":  ".agents/skills/testing/SKILL.md",
@@ -122,7 +122,7 @@
                          {
                              "path":  ".claude/skills/project-onboarding/SKILL.md",
                              "ownership":  "managed",
-                             "baselineHash":  "20C4EBD0329F6167CAD2560EA86493D43C6933190B5A45010363ADCF4BEFAF7D"
+                             "baselineHash":  "6C553D544C1C55898ECE16F55AF9BCFBCA3B6BDEAA9B7CB0601B821C8675027A"
                          },
                          {
                              "path":  ".claude/skills/testing/SKILL.md",
@@ -187,7 +187,7 @@
                          {
                              "path":  "docs/workflows/project-onboarding.md",
                              "ownership":  "managed",
-                             "baselineHash":  "A0E9F6A61A6718DC4C9F0C7DB2B034E668697184E39A6B2B132C6EFBDDDADBA0"
+                             "baselineHash":  "CF81C39570A617490B7863C3F92CC0AC5A2A747E9FB56985781E6FF946E630AD"
                          },
                          {
                              "path":  "docs/workflows/testing.md",
@@ -212,27 +212,27 @@
                          {
                              "path":  "scripts/check-doc-drift.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "230A3CF6782EDA31F506459156511304C722F83D2C016A4F56D5A9804ED81C30"
+                             "baselineHash":  "0173F458142F3B086E9AC3FE47B140BB28CE9D974A0DAE17F11F5A172182562A"
                          },
                          {
                              "path":  "scripts/check-artifact-catalog.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "3A070A78CFDCEF12170321CAD1A87406BB263E71F80844B86039197EE8289C2C"
+                             "baselineHash":  "93464AA54D15EB6097DAC9A38E50B172D67A4F271AC117D4DC418097854EC65E"
                          },
                          {
                              "path":  "scripts/update-artifact-catalog.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "E8272219E06A33B96584246BF134455C4226D4BE6A511AB4C2E57F6B296F6743"
+                             "baselineHash":  "AE0EC1B2A66AD1C3D087F03AC3E1AFC1181BD79BEFDB45AAC139217D63F0B93C"
                          },
                          {
                              "path":  "scripts/install-git-hooks.ps1",
                              "ownership":  "managed",
-                             "baselineHash":  "E2C969A953F8ABAD7287F4D60E397397868DD290046D3ABABCE757A8345DCF71"
+                             "baselineHash":  "FB382B44E7B466B88E308B3A8AE63EF4EA45C9988882662D43CFECAEB9053728"
                          },
                          {
                              "path":  ".githooks/pre-commit",
                              "ownership":  "managed",
-                             "baselineHash":  "589062A9A40EFB02AD2CFB4E3492971A14B1019CF6ED4D34C0863F746AA261D8"
+                             "baselineHash":  "07B55CF34391EC1ED4AEE64B20DA0646767961C6EAE66D3B59F581E62E8BF00C"
                          }
                      ]
 }

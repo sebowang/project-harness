@@ -1,8 +1,52 @@
+[CmdletBinding()]
+param(
+    [switch]$Staged
+)
+
 $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$config = Get-Content -LiteralPath (Join-Path $repositoryRoot 'harness.config.json') -Raw | ConvertFrom-Json
 $errors = New-Object System.Collections.Generic.List[string]
+$git = $null
+$stagedPaths = @()
+
+function Get-GitCommand {
+    if ($null -eq $script:git) {
+        $script:git = Get-Command git -ErrorAction SilentlyContinue
+        if ($null -eq $script:git) {
+            throw 'Git is required for staged document drift checks.'
+        }
+    }
+    return $script:git
+}
+
+function Get-CheckedContent {
+    param([Parameter(Mandatory = $true)][string]$RelativePath)
+
+    if (-not $Staged) {
+        $path = Join-Path $repositoryRoot $RelativePath
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            return $null
+        }
+        return Get-Content -LiteralPath $path -Raw
+    }
+
+    $gitCommand = Get-GitCommand
+    $content = & $gitCommand.Source -C $repositoryRoot show (':' + $RelativePath) 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        return $null
+    }
+    return [string]::Join("`n", @($content))
+}
+
+function Get-StagedPaths {
+    $gitCommand = Get-GitCommand
+    $output = & $gitCommand.Source -C $repositoryRoot diff --cached --name-only --diff-filter=ACMR
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to read staged Git paths.'
+    }
+    return @($output | ForEach-Object { ([string]$_).Replace('\', '/') } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+}
 
 function Get-CheckedRepositoryPath {
     param([Parameter(Mandatory = $true)][string]$RelativePath)
@@ -15,30 +59,64 @@ function Get-CheckedRepositoryPath {
     return $candidate
 }
 
+$configContent = Get-CheckedContent -RelativePath 'harness.config.json'
+if ([string]::IsNullOrWhiteSpace($configContent)) {
+    if ($Staged) {
+        throw 'Missing staged harness.config.json.'
+    }
+    throw 'Missing harness.config.json.'
+}
+
+try {
+    $config = $configContent | ConvertFrom-Json
+} catch {
+    throw "Invalid harness.config.json: $($_.Exception.Message)"
+}
+
+$driftChecks = @($config.driftChecks)
+if ($Staged) {
+    $stagedPaths = @(Get-StagedPaths)
+    $fixedPaths = @('harness.config.json', 'scripts/check-doc-drift.ps1')
+    $relevantPaths = @($fixedPaths) + @($driftChecks | ForEach-Object { ([string]$_.path).Replace('\', '/') })
+    if (-not @($stagedPaths | Where-Object { $_ -in $relevantPaths })) {
+        Write-Host 'SKIP  No staged paths affect document drift checks.'
+        exit 0
+    }
+}
+
 foreach ($relativePath in $config.requiredPaths) {
-    $path = Get-CheckedRepositoryPath -RelativePath ([string]$relativePath)
-    if ($null -eq $path) {
+    if ($Staged -and ([string]$relativePath).Replace('\', '/') -notin $stagedPaths) {
         continue
     }
-    if ((Test-Path -LiteralPath $path -PathType Leaf) -and ([IO.Path]::GetExtension($path) -in @('.md', '.json'))) {
-        $content = Get-Content -LiteralPath $path -Raw
+    $resolvedPath = Get-CheckedRepositoryPath -RelativePath ([string]$relativePath)
+    if ($null -eq $resolvedPath) {
+        continue
+    }
+    if ([IO.Path]::GetExtension($resolvedPath) -in @('.md', '.json')) {
+        $content = Get-CheckedContent -RelativePath ([string]$relativePath)
+        if ($null -eq $content) {
+            continue
+        }
         if ($content -match '\{\{[A-Z0-9_]+\}\}') {
             $errors.Add("Unresolved template placeholder: $relativePath")
         }
     }
 }
 
-foreach ($check in @($config.driftChecks)) {
+foreach ($check in $driftChecks) {
     $path = Get-CheckedRepositoryPath -RelativePath ([string]$check.path)
     if ($null -eq $path) {
         $errors.Add("Drift check path escapes the repository: $($check.path)")
         continue
-    } elseif (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        $errors.Add("Drift check path does not exist: $($check.path)")
+    }
+
+    $content = Get-CheckedContent -RelativePath ([string]$check.path)
+    if ($null -eq $content) {
+        $scope = if ($Staged) { 'staged ' } else { '' }
+        $errors.Add("Drift check path does not exist: $scope$($check.path)")
         continue
     }
 
-    $content = Get-Content -LiteralPath $path -Raw
     $matched = $content -match ([string]$check.pattern)
     $expectMatch = [bool]$check.expectMatch
     if ($matched -ne $expectMatch) {

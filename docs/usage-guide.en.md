@@ -14,6 +14,7 @@ Users do not need to orchestrate every Skill. For routine work, state the reques
 |---|---|---|
 | First adoption | Preview installation and decide whether to merge existing rules | Inspect the repository and present an onboarding Proposal without changing business configuration unilaterally |
 | Everyday work | Describe the request and acceptance expectations | Recover relevant context, make the smallest change, and validate it |
+| Whole-project refresh | Explicitly request a governance baseline refresh | Audit facts and governance docs read-only, propose differences, and update only after confirmation |
 | Long-running or cross-session work | Ask for a plan or handoff explicitly | Maintain one active plan or handoff file rather than multiple state logs |
 | A decision or lesson worth keeping | Ask for candidates first, or explicitly request a record | Inspect only accessible conversation context and repository evidence, then route knowledge to one appropriate durable location |
 
@@ -31,7 +32,7 @@ Natural-language requests are enough:
 
 This is how Harness brings a meaningful development task to a verified conclusion. It is the default internal workflow; users do not need to invoke each step manually.
 
-1. **Adopt and inspect**: preview installation with `-WhatIf`. When `AGENTS.md` already exists, the user decides whether to use `-MergeProjectRules`. Then `project-onboarding` identifies real directories, module boundaries, build entry points, validation commands, and risk capabilities from source and existing documentation. It presents a Proposal before changing project configuration.
+1. **Adopt and inspect**: preview installation with `-WhatIf`. When `AGENTS.md` already exists, the user decides whether to use `-MergeProjectRules`. Then `project-onboarding` identifies real directories, module boundaries, build entry points, validation commands, and risk capabilities from source and existing documentation. It presents a Proposal before changing project configuration. A full audit runs again only when the user explicitly requests a baseline refresh; everyday work does not rewrite the project map automatically.
 2. **Start a task**: `project-start` reads project rules, the project map, verification guidance, and relevant requirements, decisions, references, lessons, and handoff material.
 3. **Plan a change**: non-trivial work uses `change-plan` to define expected behavior, scope, unacceptable behavior, and verification. When `durable-plan` is enabled, cross-session, multi-phase, high-risk, or multi-module work must create or resume the single `docs/active-plan.md` first.
 4. **Implement and validate**: the Agent preserves existing worktree changes, makes only task-related edits, and runs risk-proportionate build, test, lint, or smoke checks.

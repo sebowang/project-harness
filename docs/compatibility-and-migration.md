@@ -41,6 +41,12 @@
 3. 如果当前环境确实无法构建，使用带理由、范围和复查条件的 `projectValidationWaiver`，不要用 Harness 自检替代业务构建证据。
 4. 运行 `scripts/verify.ps1 -Scope Harness`；配置并确认项目验证后，再运行 `scripts/verify.ps1 -Scope All`。
 
+## 从 1.3.5 启用基线刷新和暂存文档检查
+
+`project-onboarding` 现在也处理用户明确提出的“基线刷新”或“整理整个项目”。它先只读比对源码、项目地图、PRD、Decision Record、Reference、验证记录和 Harness 配置，再提交 Proposal；模块职责和边界不会自动重写。
+
+升级后的 `.githooks/pre-commit` 还会检查已配置的暂存文档漂移断言。Hook 仍是可选的：先确认 `core.hooksPath` 没有项目自己的冲突，再显式运行 `scripts/install-git-hooks.ps1`。现有项目没有 `driftChecks` 时，该部分会跳过。
+
 ## 为既有 Standard 项目启用计划与经验沉淀
 
 安全更新可以安装新的 `durable-plan`、`knowledge-capture` 工作流和对应受管 Skill，但不会改写项目拥有的 `AGENTS.md`、`harness.config.json` 或文档目录。旧项目需要人工确认后完成：

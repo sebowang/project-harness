@@ -49,6 +49,7 @@ try {
     if ($initializationOutput -notmatch [regex]::Escape('- .NET') -or $initializationOutput -notmatch [regex]::Escape('- CMake / C++')) {
         throw 'Repository signal detection did not identify nested .NET and CMake files.'
     }
+    $configPath = Join-Path $testRoot 'harness.config.json'
 
     $expectedPaths = @(
         'AGENTS.md',
@@ -120,6 +121,15 @@ try {
         }
     }
 
+    $initialOnboardingWorkflow = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\workflows\project-onboarding.md'))
+    if ($initialOnboardingWorkflow -notmatch [regex]::Escape('baseline refresh') -or $initialOnboardingWorkflow -notmatch [regex]::Escape('requiredValidationKinds')) {
+        throw 'Generated project onboarding does not support explicit governance refresh and readiness policy selection.'
+    }
+    $preCommitHook = [IO.File]::ReadAllText((Join-Path $testRoot '.githooks\pre-commit'))
+    if ($preCommitHook -notmatch [regex]::Escape('scripts/check-artifact-catalog.ps1 -Staged') -or $preCommitHook -notmatch [regex]::Escape('scripts/check-doc-drift.ps1 -Staged')) {
+        throw 'Generated pre-commit Hook does not validate both staged catalogs and document drift checks.'
+    }
+
     $customSkillPath = Join-Path $testRoot '.agents\skills\project-specific\SKILL.md'
     New-Item -ItemType Directory -Path (Split-Path -Parent $customSkillPath) -Force | Out-Null
     [IO.File]::WriteAllText($customSkillPath, "---`nname: project-specific`ndescription: Project-owned Codex-only workflow.`n---`n", (New-Object Text.UTF8Encoding($false)))
@@ -188,6 +198,34 @@ try {
     & $catalogCheck -Staged
     if (-not $?) {
         throw 'Staged artifact catalog check rejected a synchronized index.'
+    }
+
+    $docDriftCheck = Join-Path $testRoot 'scripts\check-doc-drift.ps1'
+    $stagedConfig = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+    $stagedConfig.driftChecks = @(
+        [pscustomobject]@{
+            description = 'Project map preserves the project-owned layout warning'
+            path = 'docs/project-map.md'
+            pattern = 'Project-owned layout'
+            expectMatch = $true
+        }
+    )
+    $stagedConfig | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    & git -C $testRoot add -- 'harness.config.json' 'docs/project-map.md'
+    & $docDriftCheck -Staged
+    if (-not $?) {
+        throw 'Staged document drift check rejected a matching index.'
+    }
+
+    $projectMapContent = [IO.File]::ReadAllText((Join-Path $testRoot 'docs\project-map.md'))
+    [IO.File]::WriteAllText((Join-Path $testRoot 'docs\project-map.md'), $projectMapContent.Replace('Project-owned layout', 'Layout'), (New-Object Text.UTF8Encoding($false)))
+    & git -C $testRoot add -- 'docs/project-map.md'
+    Assert-ScriptFails -Path $docDriftCheck -Arguments @('-Staged')
+    [IO.File]::WriteAllText((Join-Path $testRoot 'docs\project-map.md'), $projectMapContent, (New-Object Text.UTF8Encoding($false)))
+    & git -C $testRoot add -- 'docs/project-map.md'
+    & $docDriftCheck -Staged
+    if (-not $?) {
+        throw 'Staged document drift check rejected a restored index.'
     }
 
     $hookInstaller = Join-Path $testRoot 'scripts\install-git-hooks.ps1'
@@ -358,6 +396,9 @@ Write-Output 'Project validation passed.'
             timeoutSeconds = 10
         }
     )
+    $config | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    Assert-ScriptFails -Path (Join-Path $testRoot 'scripts\check-readiness.ps1')
+    $config.readiness.requiredValidationKinds = @('smoke')
     $config | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
 
     foreach ($markdownFile in Get-ChildItem -LiteralPath $testRoot -Filter '*.md' -Recurse -File) {

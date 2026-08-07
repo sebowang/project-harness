@@ -57,6 +57,8 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1 -Scope All
 
 `driftChecks[].pattern` 是 .NET 正则表达式。每个条目还需要 `path`、`description` 和布尔值 `expectMatch`。
 
+只为稳定、可机械验证的项目事实配置窄断言，例如必须出现的模块名或已经废弃的旧表述。它不能自动判断项目地图中的职责和依赖是否真实。`scripts/check-doc-drift.ps1 -Staged` 会读取 Git 暂存区中的配置和文件；没有暂存的配置或受检路径时会跳过，避免普通提交产生无关负担。
+
 ## Artifact catalog
 
 ```json

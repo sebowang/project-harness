@@ -33,10 +33,19 @@ $configuredKinds = @($checks | ForEach-Object {
     if ($null -eq $kindProperty -or [string]::IsNullOrWhiteSpace([string]$kindProperty.Value)) { 'custom' } else { [string]$kindProperty.Value }
 })
 
+if ($requiresProjectValidation -and $requiredKinds.Count -eq 0) {
+    $message = 'No required project validation evidence kinds are declared.'
+    if ([string]::IsNullOrWhiteSpace($waiver)) {
+        $errors.Add("$message Set readiness.requiredValidationKinds or record a specific readiness.projectValidationWaiver.")
+    } else {
+        $warnings.Add("$message Project validation waiver: $waiver")
+    }
+}
+
 if ($checks.Count -eq 0 -and $requiresProjectValidation) {
     if ([string]::IsNullOrWhiteSpace($waiver)) {
         $errors.Add('No project validation commands are configured and no readiness waiver is recorded.')
-    } else {
+    } elseif ($requiredKinds.Count -gt 0) {
         $warnings.Add("Project validation waiver: $waiver")
     }
 }
